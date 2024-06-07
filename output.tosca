@@ -53,8 +53,8 @@ topology_template:
     ui_0:
       type: example.tosca.nodetypes.ui
       metadata:
-        x: '21.859'
-        y: '7.5'
+        x: '2347'
+        y: '100'
         displayName: ui
       properties:
         container_port: 8080
@@ -71,8 +71,8 @@ topology_template:
     uibackend_0:
       type: example.tosca.nodetypes.uibackend
       metadata:
-        x: '19.817'
-        y: '6.2917'
+        x: '2108'
+        y: '251'
         displayName: uibackend
       properties:
         port: 8080
@@ -96,8 +96,8 @@ topology_template:
     orchestrator_0:
       type: example.tosca.nodetypes.orchestrator
       metadata:
-        x: '8.1364'
-        y: '5.0833'
+        x: '915'
+        y: '403'
         displayName: orchestrator
       properties:
         container_port: 8080
@@ -118,8 +118,8 @@ topology_template:
     cart_0:
       type: example.tosca.nodetypes.cart
       metadata:
-        x: '21.136'
-        y: '5.0833'
+        x: '2272'
+        y: '403'
         displayName: cart
       properties:
         port: 8080
@@ -135,8 +135,8 @@ topology_template:
     payment_0:
       type: example.tosca.nodetypes.payment
       metadata:
-        x: '13.331'
-        y: '5.0833'
+        x: '1425'
+        y: '403'
         displayName: payment
       properties:
         container_port: 8080
@@ -161,8 +161,8 @@ topology_template:
     mongodb_1:
       type: example.tosca.nodetypes.mongodb
       metadata:
-        x: '17.498'
-        y: '3.875'
+        x: '1794'
+        y: '554'
         displayName: mongo-order
       properties:
         container-port: 27017
@@ -174,8 +174,8 @@ topology_template:
     mongodb_0:
       type: example.tosca.nodetypes.mongodb
       metadata:
-        x: '21.136'
-        y: '3.875'
+        x: '2272'
+        y: '554'
         displayName: mongo-cart
       properties:
         container-port: 27017
@@ -187,8 +187,8 @@ topology_template:
     postgres_1:
       type: example.tosca.nodetypes.postgres
       metadata:
-        x: '1.9281'
-        y: '3.875'
+        x: '253'
+        y: '554'
         displayName: postgres-inventory
       properties:
         container_port: 5432
@@ -201,8 +201,8 @@ topology_template:
     postgres_0:
       type: example.tosca.nodetypes.postgres
       metadata:
-        x: '12.22'
-        y: '3.875'
+        x: '1094'
+        y: '554'
         displayName: postgres-orchestrator
       properties:
         container_port: 5432
@@ -215,8 +215,8 @@ topology_template:
     physical_node_0:
       type: example.tosca.nodetypes.physical_node
       metadata:
-        x: '15.623'
-        y: '0.25'
+        x: '1519'
+        y: '1008'
         displayName: default
       properties:
         ram_GiB: 16
@@ -225,8 +225,8 @@ topology_template:
     creditinstitute_0:
       type: example.tosca.nodetypes.creditinstitute
       metadata:
-        x: '15.623'
-        y: '3.875'
+        x: '1519'
+        y: '554'
         displayName: creditinstitute
       properties:
         container_port: 8080
@@ -240,8 +240,8 @@ topology_template:
     container_runtime_0:
       type: example.tosca.nodetypes.container_runtime
       metadata:
-        x: '15.623'
-        y: '2.6667'
+        x: '1519'
+        y: '706'
         displayName: containerd
       properties:
         name: containerd
@@ -253,8 +253,8 @@ topology_template:
     inventory_0:
       type: example.tosca.nodetypes.inventory
       metadata:
-        x: '1.1642'
-        y: '5.0833'
+        x: '172'
+        y: '403'
         displayName: inventory
       properties:
         container_port: 8080
@@ -275,8 +275,8 @@ topology_template:
     order_0:
       type: example.tosca.nodetypes.order
       metadata:
-        x: '14.942'
-        y: '5.0833'
+        x: '1767'
+        y: '403'
         displayName: order
       properties:
         container_port: 8080
@@ -301,8 +301,8 @@ topology_template:
     kafka_0:
       type: example.tosca.nodetypes.kafka
       metadata:
-        x: '7.4003'
-        y: '3.875'
+        x: '749'
+        y: '554'
         displayName: kafka
       properties:
         controller: 9093
@@ -316,8 +316,8 @@ topology_template:
     cdcservice_0:
       type: example.tosca.nodetypes.cdcservice
       metadata:
-        x: '3.7197'
-        y: '5.0833'
+        x: '474'
+        y: '403'
         displayName: cdcservice
       properties:
         port: 8080
@@ -337,8 +337,8 @@ topology_template:
     operating_system_0:
       type: example.tosca.nodetypes.operating_system
       metadata:
-        x: '15.623'
-        y: '1.4583'
+        x: '1519'
+        y: '857'
         displayName: Ubuntu
       properties:
         os_family: Linux
