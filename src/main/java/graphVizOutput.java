@@ -55,17 +55,17 @@ public static void cmdCommand(){
     String command = "dot -Tplain example.dot"; // Replace with your actual command
 
     // The file to save the output
-    String outputFilePath = "output2.txt";
+    String outputFilePath = "output.txt";
 
     ProcessBuilder processBuilder = new ProcessBuilder();
 
-
     //THIS NEEDS TO CHANGES DEPENDEND which OS you use!
     // Command for Windows
-    processBuilder.command("cmd.exe", "/c", command);
+    //processBuilder.command("cmd.exe", "/c", command);
     //THIS NEEDS TO CHANGES DEPENDEND which OS you use!
     // If on Unix-based systems, use:
-    // processBuilder.command("sh", "-c", command);
+    processBuilder.command("sh", "-c", command);
+    processBuilder.directory(new File("/mnt/d/GitHub/st149535/layout-pipline"));
 
     try {
         // Start the process
@@ -98,7 +98,7 @@ public static void cmdCommand(){
             try {
                 // Load the YAML file
                 Yaml yaml = new Yaml();
-                FileInputStream inputStream = new FileInputStream("output.tosca");
+                FileInputStream inputStream = new FileInputStream("example.tosca");
                 Map<String, Object> data = yaml.load(inputStream);
 
                 // Define a mapping of node template keys to new x and y values
@@ -127,7 +127,7 @@ public static void cmdCommand(){
                     Representer representer = new Representer();
                     representer.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
                     Yaml yamlOutput = new Yaml(representer);
-                    FileWriter writer = new FileWriter("output23.tosca");
+                    FileWriter writer = new FileWriter("output.tosca");
                     yamlOutput.dump(data, writer);
                     
                 } catch (IOException e) {

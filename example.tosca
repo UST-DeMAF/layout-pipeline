@@ -1,0 +1,419 @@
+tosca_definitions_version: tosca_simple_yaml_1_3
+
+metadata:
+  targetNamespace: "example.tosca.servicetemplates"
+  name: "example"
+imports:
+  - file: ntyIgeneral__uibackend.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__ui.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__orchestrator.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__cart.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__mongodb.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__payment.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__postgres.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__physical_node.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__creditinstitute.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__container_runtime.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__kafka.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__order.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__inventory.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__cdcservice.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+  - file: ntyIgeneral__operating_system.tosca
+    namespace_uri: example.tosca.nodetypes
+    namespace_prefix: ntyIgeneral
+topology_template:
+  node_templates:
+    ui_0:
+      type: example.tosca.nodetypes.ui
+      metadata:
+        x: "1592"
+        y: "159"
+        displayName: "ui"
+      properties:
+        container_port: 8080
+        external_port: "80:8080"
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_11
+            capability: feature
+        - connect:
+            node: uibackend_0
+            relationship: con_ConnectsTo_0
+            capability: feature
+    uibackend_0:
+      type: example.tosca.nodetypes.uibackend
+      metadata:
+        x: "1596"
+        y: "409"
+        displayName: "uibackend"
+      properties:
+        port: 8080
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_6
+            capability: feature
+        - connect:
+            node: cart_0
+            relationship: con_ConnectsTo_3
+            capability: feature
+        - connect:
+            node: inventory_0
+            relationship: con_ConnectsTo_6
+            capability: feature
+        - connect:
+            node: orchestrator_0
+            relationship: con_ConnectsTo_11
+            capability: feature
+    orchestrator_0:
+      type: example.tosca.nodetypes.orchestrator
+      metadata:
+        x: "564"
+        y: "162"
+        displayName: "orchestrator"
+      properties:
+        container_port: 8080
+        external_port: "80:8080"
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_7
+            capability: feature
+        - connect:
+            node: kafka_0
+            relationship: con_ConnectsTo_5
+            capability: feature
+        - connect:
+            node: postgres_0
+            relationship: con_ConnectsTo_16
+            capability: feature
+    cart_0:
+      type: example.tosca.nodetypes.cart
+      metadata:
+        x: "1598"
+        y: "646"
+        displayName: "cart"
+      properties:
+        port: 8080
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_15
+            capability: feature
+        - connect:
+            node: mongodb_0
+            relationship: con_ConnectsTo_12
+            capability: feature
+    payment_0:
+      type: example.tosca.nodetypes.payment
+      metadata:
+        x: "734"
+        y: "357"
+        displayName: "payment"
+      properties:
+        container_port: 8080
+        external_port: "80:8080"
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_13
+            capability: feature
+        - connect:
+            node: kafka_0
+            relationship: con_ConnectsTo_7
+            capability: feature
+        - connect:
+            node: postgres_0
+            relationship: con_ConnectsTo_8
+            capability: feature
+        - connect:
+            node: creditinstitute_0
+            relationship: con_ConnectsTo_13
+            capability: feature
+    mongodb_1:
+      type: example.tosca.nodetypes.mongodb
+      metadata:
+        x: "1445"
+        y: "234"
+        displayName: "mongo-order"
+      properties:
+        container-port: 27017
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_3
+            capability: feature
+    mongodb_0:
+      type: example.tosca.nodetypes.mongodb
+      metadata:
+        x: "1245"
+        y: "718"
+        displayName: "mongo-cart"
+      properties:
+        container-port: 27017
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_2
+            capability: feature
+    postgres_1:
+      type: example.tosca.nodetypes.postgres
+      metadata:
+        x: "341"
+        y: "710"
+        displayName: "postgres-inventory"
+      properties:
+        container_port: 5432
+        external_port: "5432:5432"
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_8
+            capability: feature
+    postgres_0:
+      type: example.tosca.nodetypes.postgres
+      metadata:
+        x: "1018"
+        y: "218"
+        displayName: "postgres-orchestrator"
+      properties:
+        container_port: 5432
+        external_port: "5432:5432"
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_14
+            capability: feature
+    physical_node_0:
+      type: example.tosca.nodetypes.physical_node
+      metadata:
+        x: "883"
+        y: "845"
+        displayName: "default"
+      properties:
+        ram_GiB: 16
+        storage_GiB: 32
+        cpu_count: 4
+    creditinstitute_0:
+      type: example.tosca.nodetypes.creditinstitute
+      metadata:
+        x: "1417"
+        y: "513"
+        displayName: "creditinstitute"
+      properties:
+        container_port: 8080
+        external_port: "80:8080"
+        http: "80:8080"
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_5
+            capability: feature
+    container_runtime_0:
+      type: example.tosca.nodetypes.container_runtime
+      metadata:
+        x: "886"
+        y: "587"
+        displayName: "containerd"
+      properties:
+        name: "containerd"
+      requirements:
+        - host:
+            node: operating_system_0
+            relationship: con_HostedOn_1
+            capability: feature
+    inventory_0:
+      type: example.tosca.nodetypes.inventory
+      metadata:
+        x: "341"
+        y: "613"
+        displayName: "inventory"
+      properties:
+        container_port: 8080
+        external_port: "80:8080"
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_10
+            capability: feature
+        - connect:
+            node: postgres_1
+            relationship: con_ConnectsTo_4
+            capability: feature
+        - connect:
+            node: kafka_0
+            relationship: con_ConnectsTo_15
+            capability: feature
+    order_0:
+      type: example.tosca.nodetypes.order
+      metadata:
+        x: "1298"
+        y: "340"
+        displayName: "order"
+      properties:
+        container_port: 8080
+        external_port: "80:8080"
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_9
+            capability: feature
+        - connect:
+            node: mongodb_1
+            relationship: con_ConnectsTo_9
+            capability: feature
+        - connect:
+            node: kafka_0
+            relationship: con_ConnectsTo_10
+            capability: feature
+        - connect:
+            node: postgres_0
+            relationship: con_ConnectsTo_14
+            capability: feature
+    kafka_0:
+      type: example.tosca.nodetypes.kafka
+      metadata:
+        x: "605"
+        y: "497"
+        displayName: "kafka"
+      properties:
+        controller: 9093
+        interbroker: 9094
+        client: 9092
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_4
+            capability: feature
+    cdcservice_0:
+      type: example.tosca.nodetypes.cdcservice
+      metadata:
+        x: "317"
+        y: "329"
+        displayName: "cdcservice"
+      properties:
+        port: 8080
+      requirements:
+        - host:
+            node: container_runtime_0
+            relationship: con_HostedOn_12
+            capability: feature
+        - connect:
+            node: postgres_0
+            relationship: con_ConnectsTo_1
+            capability: feature
+        - connect:
+            node: kafka_0
+            relationship: con_ConnectsTo_2
+            capability: feature
+    operating_system_0:
+      type: example.tosca.nodetypes.operating_system
+      metadata:
+        x: "884"
+        y: "721"
+        displayName: "Ubuntu"
+      properties:
+        os_family: "Linux"
+        name: "Ubuntu"
+        version: 18.04
+      requirements:
+        - host:
+            node: physical_node_0
+            relationship: con_HostedOn_0
+            capability: feature
+  relationship_templates:
+    con_HostedOn_15:
+      type: tosca.relationships.HostedOn
+    con_ConnectsTo_11:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_12:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_10:
+      type: tosca.relationships.ConnectsTo
+    con_HostedOn_2:
+      type: tosca.relationships.HostedOn
+    con_ConnectsTo_15:
+      type: tosca.relationships.ConnectsTo
+    con_HostedOn_3:
+      type: tosca.relationships.HostedOn
+    con_ConnectsTo_16:
+      type: tosca.relationships.ConnectsTo
+    con_HostedOn_0:
+      type: tosca.relationships.HostedOn
+    con_ConnectsTo_13:
+      type: tosca.relationships.ConnectsTo
+    con_HostedOn_1:
+      type: tosca.relationships.HostedOn
+    con_ConnectsTo_14:
+      type: tosca.relationships.ConnectsTo
+    con_HostedOn_11:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_12:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_8:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_13:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_9:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_14:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_6:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_7:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_4:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_5:
+      type: tosca.relationships.HostedOn
+    con_HostedOn_10:
+      type: tosca.relationships.HostedOn
+    con_ConnectsTo_2:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_3:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_4:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_5:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_0:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_1:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_6:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_7:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_8:
+      type: tosca.relationships.ConnectsTo
+    con_ConnectsTo_9:
+      type: tosca.relationships.ConnectsTo
