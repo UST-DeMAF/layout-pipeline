@@ -66,7 +66,7 @@ public class graphVizOutput {
         //THIS NEEDS TO CHANGES DEPENDEND which OS you use!
         // If on Unix-based systems, use:
         processBuilder.command("sh", "-c", command);
-        processBuilder.directory(new File("/mnt/d/GitHub/st149535/layout-pipline"));
+        processBuilder.directory(new File("/mnt/d/GitHub/st149535/layout-pipeline"));
 
         try {
             // Start the process

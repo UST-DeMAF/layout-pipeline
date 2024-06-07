@@ -6,7 +6,7 @@ on:
       - 'main'
 
 env:
-  IMAGE_NAME: layout-pipline
+  IMAGE_NAME: layout-pipeline
 
 jobs:
   build-with-paketo-push-2-dockerhub:
