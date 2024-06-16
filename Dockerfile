@@ -6,8 +6,12 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get autoclean -y
 
+RUN mkdir -p /app/target/data
+WORKDIR /app
+
 COPY pom.xml .
-COPY src src
+COPY src ./src
 
 RUN mvn clean package
-CMD "mvn" "exec:java"
+
+CMD java -jar target/layout-pipeline-1.0-SNAPSHOT.jar
