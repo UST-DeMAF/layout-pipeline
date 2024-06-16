@@ -66,7 +66,6 @@ public class graphVizOutput {
         //THIS NEEDS TO CHANGES DEPENDEND which OS you use!
         // If on Unix-based systems, use:
         processBuilder.command("sh", "-c", command);
-        processBuilder.directory(new File("/app/target/data/"));
 
         try {
             // Start the process
@@ -141,7 +140,6 @@ public class graphVizOutput {
 
             // Create a Representer with DumperOptions
             Representer representer = new Representer(options);
-            representer.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
             Yaml yamlOutput = new Yaml(representer);
             FileWriter writer = new FileWriter("/app/target/data/outputs/output.tosca");
             yamlOutput.dump(data, writer);
