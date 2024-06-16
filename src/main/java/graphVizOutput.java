@@ -23,7 +23,7 @@ public class graphVizOutput {
     Creates a HashMap containing the "real" x and y coords for the yaml/tosca file.
      */
     public static Map<String, float[]> createHashMap() {
-        String filePath = "output.txt";
+        String filePath = "/app/target/data/outputs/output.txt";
 
         Map<String, float[]> output = new HashMap<>();
 
@@ -53,10 +53,10 @@ public class graphVizOutput {
     public static void cmdCommand() {
 
         // The command to be executed
-        String command = "dot -Tplain example.dot"; // Replace with your actual command
+        String command = "dot -Tplain /app/target/data/inputs/example.dot"; // Replace with your actual command
 
         // The file to save the output
-        String outputFilePath = "output.txt";
+        String outputFilePath = "/app/target/data/outputs/output.txt";
 
         ProcessBuilder processBuilder = new ProcessBuilder();
 
@@ -66,7 +66,7 @@ public class graphVizOutput {
         //THIS NEEDS TO CHANGES DEPENDEND which OS you use!
         // If on Unix-based systems, use:
         processBuilder.command("sh", "-c", command);
-        processBuilder.directory(new File("/mnt/d/GitHub/st149535/layout-pipeline"));
+        processBuilder.directory(new File("/app/target/data/"));
 
         try {
             // Start the process
@@ -99,7 +99,7 @@ public class graphVizOutput {
         try {
             // Load the YAML file
             Yaml yaml = new Yaml();
-            FileInputStream inputStream = new FileInputStream("example.tosca");
+            FileInputStream inputStream = new FileInputStream("/app/target/data/inputs/example.tosca");
             Map<String, Object> data = yaml.load(inputStream);
 
             // Define a mapping of node template keys to new x and y values
@@ -137,7 +137,7 @@ public class graphVizOutput {
             Representer representer = new Representer();
             representer.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
             Yaml yamlOutput = new Yaml(representer);
-            FileWriter writer = new FileWriter("output.tosca");
+            FileWriter writer = new FileWriter("/app/target/data/outputs/output.tosca");
             yamlOutput.dump(data, writer);
 
         } catch (IOException e) {
@@ -145,7 +145,3 @@ public class graphVizOutput {
         }
     }
 }
-
-    
-
-
