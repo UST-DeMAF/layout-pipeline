@@ -133,8 +133,14 @@ public class graphVizOutput {
                 }
             }
 
-            // Save the updated data back to the YAML file
-            Representer representer = new Representer();
+            // Create DumperOptions and configure it
+            // In SnakeYAML, DumperOptions is a class used to configure various aspects of how YAML data is serialized (written out to a file or a stream).
+            // This class provides settings that control the style and structure of the output YAML document.
+            DumperOptions options = new DumperOptions();
+            options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+
+            // Create a Representer with DumperOptions
+            Representer representer = new Representer(options);
             representer.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
             Yaml yamlOutput = new Yaml(representer);
             FileWriter writer = new FileWriter("output.tosca");
