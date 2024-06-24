@@ -10,7 +10,7 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-//import ust.tad.layoutpipeline.analysis.AnalysisService;
+import ust.tad.layoutpipeline.analysis.AnalysisService;
 
 @Service
 public class AnalysisTaskReceiver {
@@ -21,11 +21,11 @@ public class AnalysisTaskReceiver {
     @Autowired
     private MessageConverter jsonMessageConverter;
 
-    //@Autowired
-    //private AnalysisTaskResponseSender analysisTaskResponseSender;
+    @Autowired
+    private AnalysisTaskResponseSender analysisTaskResponseSender;
 
-    //@Autowired
-    //private AnalysisService analysisService;
+    @Autowired
+    private AnalysisService analysisService;
 
     /**
      * Receives a message from the analysis task request queue.
@@ -59,7 +59,7 @@ public class AnalysisTaskReceiver {
     private void receiveAnalysisTaskStartRequest(Message message) {
         ObjectMapper mapper = new ObjectMapper();
 
-        /*AnalysisTaskStartRequest analysisTaskStartRequest = mapper.convertValue(
+        AnalysisTaskStartRequest analysisTaskStartRequest = mapper.convertValue(
                 jsonMessageConverter.fromMessage(message),
                 AnalysisTaskStartRequest.class);
 
@@ -68,14 +68,14 @@ public class AnalysisTaskReceiver {
                 analysisTaskStartRequest.getTaskId(),
                 analysisTaskStartRequest.getTransformationProcessId(),
                 analysisTaskStartRequest.getCommands(),
-                analysisTaskStartRequest.getLocations());*/
+                analysisTaskStartRequest.getLocations());
     }
 
     /**
      * Creates and sends an AnalysisTaskResponse containing an error message.
      */
     private void respondWithErrorMessage(String errorMessage) {
-        //analysisTaskResponseSender.sendFailureResponse(null, errorMessage);
+        analysisTaskResponseSender.sendFailureResponse(null, errorMessage);
     }
 
 }
