@@ -113,8 +113,8 @@ services:
     depends_on:
       - analysismanager
     environment:
-      ANALYSIS-MANAGER_PLUGIN-REGISTRATION_URL: http://analysismanager:8080/plugin-registration
-      MODELS-SERVICE_URL: http://modelsservice:8081
+      ANALYSIS_MANAGER_PLUGIN_REGISTRATION_URL: http://analysismanager:8080/plugin-registration
+      MODELS_SERVICE_URL: http://modelsservice:8081
       SPRING_RABBITMQ_HOST: rabbitmq
     volumes:
       - demaf:/usr/share
