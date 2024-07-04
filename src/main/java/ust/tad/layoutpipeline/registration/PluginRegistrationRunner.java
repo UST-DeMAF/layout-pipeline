@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
@@ -33,7 +31,7 @@ import ust.tad.layoutpipeline.analysistask.AnalysisTaskReceiver;
  * Runner that is executed at application startup to register this plugin at the Analysis Manager.
  */
 @Component
-public class PluginRegistrationRunner implements ApplicationRunner{
+public class PluginRegistrationRunner implements ApplicationRunner {
 
     private static final Logger LOG =
             LoggerFactory.getLogger(PluginRegistrationRunner.class);
@@ -67,9 +65,13 @@ public class PluginRegistrationRunner implements ApplicationRunner{
 
         LOG.info("Registering Plugin");
         boolean reachable = false;
-
-        while (!reachable) {
-        reachable = isWebsiteReachable("172.19.0.7", 8080, 60000);
+        int connectionAttempts = 0;
+        int maxAttempts = 20;
+        System.out.println(pluginRegistrationURI);
+        while (!reachable || connectionAttempts > maxAttempts) {
+            reachable = isServiceReachable("analysismanager", 8080, 5000, connectionAttempts, maxAttempts);
+            Thread.sleep(2000);
+            connectionAttempts++;
         }
         String body = createPluginRegistrationBody();
 
@@ -110,14 +112,15 @@ public class PluginRegistrationRunner implements ApplicationRunner{
         return listener;
     }
 
-    public static boolean isWebsiteReachable(String ipAddress,int port, int timeout) {
+    public static boolean isServiceReachable(String hostNameOrIP, int port, int timeout, int connectionAttempts, int maxAttempts) {
         try (Socket socket = new Socket()) {
-            // Attempt to connect to the address and port within the given timeout
-            socket.connect(new InetSocketAddress(ipAddress, port), timeout);
+            // Attempt to connect to the host and port within the given timeout
+            socket.connect(new InetSocketAddress(hostNameOrIP, port), timeout);
+            LOG.info(hostNameOrIP + " is reachable. Start Registration." ); // Print "yes" if the connection is successful
             return true;
         } catch (IOException e) {
             // Connection failed or timed out
-            //e.printStackTrace();
+            LOG.info(hostNameOrIP + " is't reachable. Retry(" + connectionAttempts + "/" + maxAttempts +")"); // Print "no" if the connection fails
             return false;
         }
     }
