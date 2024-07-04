@@ -4,6 +4,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.FanoutExchange;
@@ -53,11 +59,18 @@ public class PluginRegistrationRunner implements ApplicationRunner{
     @Value("${messaging.analysistask.response.exchange.name}")
     private String responseExchangeName;
 
+    @Value("${analysis-manager.plugin-registration.url}")
+    private String pluginRegistrationURI;
+
     @Override
-    public void run(ApplicationArguments args) throws JsonProcessingException {
+    public void run(ApplicationArguments args) throws JsonProcessingException, InterruptedException {
 
         LOG.info("Registering Plugin");
+        boolean reachable = false;
 
+        while (!reachable) {
+        reachable = isWebsiteReachable("172.19.0.7", 8080, 60000);
+        }
         String body = createPluginRegistrationBody();
 
         PluginRegistrationResponse response = pluginRegistrationApiClient.post()
@@ -97,4 +110,15 @@ public class PluginRegistrationRunner implements ApplicationRunner{
         return listener;
     }
 
+    public static boolean isWebsiteReachable(String ipAddress,int port, int timeout) {
+        try (Socket socket = new Socket()) {
+            // Attempt to connect to the address and port within the given timeout
+            socket.connect(new InetSocketAddress(ipAddress, port), timeout);
+            return true;
+        } catch (IOException e) {
+            // Connection failed or timed out
+            //e.printStackTrace();
+            return false;
+        }
+    }
 }
