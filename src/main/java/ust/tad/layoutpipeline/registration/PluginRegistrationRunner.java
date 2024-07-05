@@ -48,6 +48,9 @@ public class PluginRegistrationRunner implements ApplicationRunner {
     @Autowired
     private AnalysisTaskReceiver analysisTaskReceiver;
 
+    @Value("${analysis-manager.plugin-registration.url}")
+    private String pluginRegistrationURI;
+
     @Value("${plugin.technology}")
     private String pluginTechnology;
 
@@ -57,22 +60,24 @@ public class PluginRegistrationRunner implements ApplicationRunner {
     @Value("${messaging.analysistask.response.exchange.name}")
     private String responseExchangeName;
 
-    @Value("${analysis-manager.plugin-registration.url}")
-    private String pluginRegistrationURI;
-
     @Override
     public void run(ApplicationArguments args) throws JsonProcessingException, InterruptedException {
 
         LOG.info("Registering Plugin");
-        boolean reachable = false;
-        int connectionAttempts = 0;
+
+        String host = pluginRegistrationURI.split(":")[1].replace("/","");
+        int port = Integer.parseInt(pluginRegistrationURI.split(":")[2].split("/")[0]);
         int maxAttempts = 20;
-        System.out.println(pluginRegistrationURI);
-        while (!reachable || connectionAttempts > maxAttempts) {
-            reachable = isServiceReachable("analysismanager", 8080, 5000, connectionAttempts, maxAttempts);
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            if(isServiceReachable(host, port, 5000, attempt + 1, maxAttempts))
+            {
+                break;
+            }
             Thread.sleep(2000);
-            connectionAttempts++;
         }
+
         String body = createPluginRegistrationBody();
 
         PluginRegistrationResponse response = pluginRegistrationApiClient.post()
@@ -112,15 +117,15 @@ public class PluginRegistrationRunner implements ApplicationRunner {
         return listener;
     }
 
-    public static boolean isServiceReachable(String hostNameOrIP, int port, int timeout, int connectionAttempts, int maxAttempts) {
+    public static boolean isServiceReachable(String hostNameOrIP, int port, int timeout, int attempt, int maxAttempts) {
         try (Socket socket = new Socket()) {
             // Attempt to connect to the host and port within the given timeout
             socket.connect(new InetSocketAddress(hostNameOrIP, port), timeout);
-            LOG.info(hostNameOrIP + " is reachable. Start Registration." ); // Print "yes" if the connection is successful
+            LOG.info("Service " + hostNameOrIP + " is reachable. Start registration." );
             return true;
         } catch (IOException e) {
             // Connection failed or timed out
-            LOG.info(hostNameOrIP + " is't reachable. Retry(" + connectionAttempts + "/" + maxAttempts +")"); // Print "no" if the connection fails
+            LOG.info("Service " + hostNameOrIP + " isn't reachable. Attempt(" + attempt + "/" + maxAttempts +")");
             return false;
         }
     }
