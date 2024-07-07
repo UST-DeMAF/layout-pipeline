@@ -1,35 +1,37 @@
 package ust.tad.layoutpipeline.analysis;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+
 
 import ust.tad.layoutpipeline.analysistask.AnalysisTaskResponseSender;
 import ust.tad.layoutpipeline.analysistask.Location;
+import ust.tad.layoutpipeline.models.ModelsService;
+import ust.tad.layoutpipeline.models.tadm.TechnologyAgnosticDeploymentModel;
 
 @Service
 public class AnalysisService {
-    public void startAnalysis(UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {}
 
-    //private void updateDeploymentModels(TechnologySpecificDeploymentModel tsdm, TechnologyAgnosticDeploymentModel tadm){}
+    @Autowired
+    ModelsService modelsService;
 
-    private void runAnalysis(List<String> commands, List<Location> locations) throws URISyntaxException, IOException/*, InvalidNumberOfLinesException, InvalidAnnotationException, InvalidNumberOfContentException*/ {}
+    @Autowired
+    AnalysisTaskResponseSender analysisTaskResponseSender;
 
-    private void analyzeFile(URL url) throws IOException/*, InvalidNumberOfLinesException, InvalidAnnotationException*/{}
+    LayoutService layoutService;
 
-    private void addEmbeddedDeploymentModel(String technology, String lineContent, URL currentDirectory) throws MalformedURLException/*, InvalidAnnotationException, InvalidNumberOfLinesException*/ {}
+    private TechnologyAgnosticDeploymentModel tadm;
+
+    public void startAnalysis(UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {
+        this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
+
+        layoutService.generateLayout(this.tadm);
+
+        analysisTaskResponseSender.sendSuccessResponse(taskId);
+    }
 }
