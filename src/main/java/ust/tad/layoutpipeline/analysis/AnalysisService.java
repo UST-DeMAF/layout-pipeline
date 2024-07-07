@@ -21,7 +21,12 @@ import org.springframework.util.StringUtils;
 import ust.tad.layoutpipeline.analysistask.AnalysisTaskResponseSender;
 import ust.tad.layoutpipeline.analysistask.Location;
 import ust.tad.layoutpipeline.models.ModelsService;
+import ust.tad.layoutpipeline.models.tadm.InvalidPropertyValueException;
+import ust.tad.layoutpipeline.models.tadm.InvalidRelationException;
 import ust.tad.layoutpipeline.models.tadm.TechnologyAgnosticDeploymentModel;
+import ust.tad.layoutpipeline.models.tsdm.InvalidAnnotationException;
+import ust.tad.layoutpipeline.models.tsdm.InvalidNumberOfContentException;
+import ust.tad.layoutpipeline.models.tsdm.InvalidNumberOfLinesException;
 import ust.tad.layoutpipeline.models.tsdm.TechnologySpecificDeploymentModel;
 
 @Service
@@ -42,11 +47,35 @@ public class AnalysisService {
     public void startAnalysis(UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {
         this.tsdm = modelsService.getTechnologySpecificDeploymentModel(transformationProcessId);
         this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
+
+        try {
+            runAnalysis(locations);
+        } catch (InvalidNumberOfContentException | URISyntaxException | IOException |
+                 InvalidNumberOfLinesException | InvalidAnnotationException e) {
+            e.printStackTrace();
+            analysisTaskResponseSender.sendFailureResponse(taskId,
+                    e.getClass() + ": " + e.getMessage());
+            return;
+        }
+
+        updateDeploymentModels(this.tsdm, this.tadm);
+
+        if (!newEmbeddedDeploymentModelIndexes.isEmpty()) {
+            for (int index : newEmbeddedDeploymentModelIndexes) {
+                analysisTaskResponseSender.sendEmbeddedDeploymentModelAnalysisRequestFromModel(
+                        this.tsdm.getEmbeddedDeploymentModels().get(index), taskId);
+            }
+        }
+
+        analysisTaskResponseSender.sendSuccessResponse(taskId);
     }
 
-    private void updateDeploymentModels(TechnologySpecificDeploymentModel tsdm, TechnologyAgnosticDeploymentModel tadm){}
+    private void updateDeploymentModels(TechnologySpecificDeploymentModel tsdm, TechnologyAgnosticDeploymentModel tadm) {
+        modelsService.updateTechnologySpecificDeploymentModel(tsdm);
+        modelsService.updateTechnologyAgnosticDeploymentModel(tadm);
+    }
 
-    private void runAnalysis(List<String> commands, List<Location> locations) throws URISyntaxException, IOException/*, InvalidNumberOfLinesException, InvalidAnnotationException, InvalidNumberOfContentException*/ {}
+    private void runAnalysis(List<Location> locations) throws URISyntaxException, IOException, InvalidNumberOfLinesException, InvalidAnnotationException, InvalidNumberOfContentException {}
 
     private void analyzeFile(URL url) throws IOException/*, InvalidNumberOfLinesException, InvalidAnnotationException*/{}
 
