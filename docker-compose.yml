@@ -117,5 +117,5 @@ services:
       MODELS_SERVICE_URL: http://modelsservice:8081
       SPRING_RABBITMQ_HOST: rabbitmq
     volumes:
-      - demaf:/usr/share
+      - demaf:/var/repository
       - ./data:/app/target/data
