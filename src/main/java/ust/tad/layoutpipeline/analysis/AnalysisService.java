@@ -20,12 +20,31 @@ import org.springframework.util.StringUtils;
 
 import ust.tad.layoutpipeline.analysistask.AnalysisTaskResponseSender;
 import ust.tad.layoutpipeline.analysistask.Location;
+import ust.tad.layoutpipeline.models.ModelsService;
+import ust.tad.layoutpipeline.models.tadm.TechnologyAgnosticDeploymentModel;
+import ust.tad.layoutpipeline.models.tsdm.TechnologySpecificDeploymentModel;
 
 @Service
 public class AnalysisService {
-    public void startAnalysis(UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {}
 
-    //private void updateDeploymentModels(TechnologySpecificDeploymentModel tsdm, TechnologyAgnosticDeploymentModel tadm){}
+    @Autowired
+    ModelsService modelsService;
+
+    @Autowired
+    AnalysisTaskResponseSender analysisTaskResponseSender;
+
+    private TechnologySpecificDeploymentModel tsdm;
+
+    private TechnologyAgnosticDeploymentModel tadm;
+
+    private Set<Integer> newEmbeddedDeploymentModelIndexes = new HashSet<>();
+
+    public void startAnalysis(UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {
+        this.tsdm = modelsService.getTechnologySpecificDeploymentModel(transformationProcessId);
+        this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
+    }
+
+    private void updateDeploymentModels(TechnologySpecificDeploymentModel tsdm, TechnologyAgnosticDeploymentModel tadm){}
 
     private void runAnalysis(List<String> commands, List<Location> locations) throws URISyntaxException, IOException/*, InvalidNumberOfLinesException, InvalidAnnotationException, InvalidNumberOfContentException*/ {}
 
