@@ -46,7 +46,7 @@ public class AnalysisService {
             try {
                 runAnalysis(locations);
                 modelsService.updateTechnologyAgnosticDeploymentModel(tadm);
-            } catch (IOException | InvalidAnnotationException | InvalidPropertyValueException e) {
+            } catch (IOException | InvalidAnnotationException | InvalidPropertyValueException | InvalidRelationException e) {
                 e.printStackTrace();
                 analysisTaskResponseSender.sendFailureResponse(taskId,
                         e.getClass() + ": " + e.getMessage());
@@ -59,7 +59,7 @@ public class AnalysisService {
         analysisTaskResponseSender.sendSuccessResponse(taskId);
     }
 
-    private void runAnalysis(List<Location> locations) throws IOException, InvalidAnnotationException, InvalidPropertyValueException {
+    private void runAnalysis(List<Location> locations) throws IOException, InvalidAnnotationException, InvalidPropertyValueException, InvalidRelationException {
         for (Location location : locations) {
             if ("tf".equals(StringUtils.getFilenameExtension(location.getUrl().toString()))) {
                 parseFile(location.getUrl());
@@ -70,7 +70,7 @@ public class AnalysisService {
 
     private List<Artifact> readArtifacts(BufferedReader reader, String nextLine) throws IOException {
         List<Artifact> artifacts = new ArrayList<>();
-        if (nextLine == null || nextLine.isEmpty()) {
+        if (nextLine.isEmpty()) {
             nextLine = reader.readLine();
         } else if (nextLine.startsWith("artifacts") && !nextLine.contains("[]")) {
             nextLine = reader.readLine();
@@ -102,7 +102,7 @@ public class AnalysisService {
 
     private  List<Operation> readOperations(BufferedReader reader, String nextLine) throws IOException {
         List<Operation> operations = new ArrayList<>();
-        if (nextLine == null || nextLine.isEmpty()) {
+        if (nextLine.isEmpty()) {
             nextLine = reader.readLine();
         } else if (nextLine.startsWith("operations") && !nextLine.contains("[]")) {
             //TODO: Gaining knowledge of structure.
@@ -112,7 +112,7 @@ public class AnalysisService {
 
     private List<Property> readProperties(BufferedReader reader, String nextLine) throws IOException, InvalidPropertyValueException {
         List<Property> properties = new ArrayList<>();
-        if (nextLine == null || nextLine.isEmpty() || nextLine == "---") {
+        if (nextLine.isEmpty() || nextLine.equals("---")) {
             nextLine = reader.readLine();
         } else if (nextLine.startsWith("properties") && !nextLine.contains("[]")) {
             nextLine = reader.readLine();
@@ -122,15 +122,15 @@ public class AnalysisService {
                 String key = nextLine.split(":")[0].replaceAll("\\s|-", "");
                 String value = nextLine.split(":")[1].replaceAll("\\s|-", "");
 
-                if (value == null || value.isEmpty()) {
+                if (value.isEmpty()) {
                     property.setKey(key);
                     property.setValue(value);
 
                     nextLine = reader.readLine();
                     while (!nextLine.startsWith("-")){
-                        nextLine.replaceAll("\\s|-", "");
+                        nextLine = nextLine.replaceAll("\\s|-", "");
                         if (nextLine.startsWith("type")) {
-                            switch (nextLine.split(":")[1]) {
+                            switch (nextLine.split(":")[1].replaceAll("\"", "")) {
                                 case "BOOLEAN":
                                     property.setType(PropertyType.BOOLEAN);
                                     break;
@@ -163,12 +163,81 @@ public class AnalysisService {
         }
         return properties;
     }
-    private void readComponentTypes(BufferedReader reader) {
 
+    private void readComponentTypes(BufferedReader reader) throws IOException, InvalidPropertyValueException {
+        String nextLine = reader.readLine();
+        while (!nextLine.startsWith("component_types")){
+            nextLine = reader.readLine();
+        }
+        nextLine = reader.readLine();
+        while (nextLine.startsWith("-")) {
+            ComponentType componentType = new ComponentType();
+
+            String name = nextLine.replaceAll("\\s|-|:", "");
+            componentType.setName(name);
+
+            nextLine = reader.readLine();
+            while (!nextLine.startsWith("-")) {
+                if (nextLine.startsWith("extends")) {
+                    String value = nextLine.split(":")[1].replaceAll("\\s", "");
+                    if (!value.equals("\"-\"")) {
+                        for (ComponentType parentType : componentTypes) {
+                            if (parentType.getName().equals(value.replaceAll("\"", ""))) {
+                                componentType.setParentType(parentType);
+                            }
+                        }
+                    }
+                } else if (nextLine.startsWith("description")) {
+                    String value = nextLine.split(":")[1].replaceAll("\\s", "");
+                    componentType.setDescription(value);
+                } else if (nextLine.startsWith("properties")) {
+                    componentType.setProperties(readProperties(reader, nextLine));
+                } else if (nextLine.startsWith("operations")) {
+                    componentType.setOperations(readOperations(reader, nextLine));
+                }
+                nextLine = reader.readLine();
+            }
+            componentTypes.add(componentType);
+            nextLine = reader.readLine();
+        }
     }
 
-    private void readRelationTypes(BufferedReader reader) {
+    private void readRelationTypes(BufferedReader reader) throws IOException, InvalidPropertyValueException {
+        String nextLine = reader.readLine();
+        while (!nextLine.startsWith("relation_types")){
+            nextLine = reader.readLine();
+        }
+        nextLine = reader.readLine();
+        while (nextLine.startsWith("-")) {
+            RelationType relationType = new RelationType();
 
+            String name = nextLine.replaceAll("\\s|-|:", "");
+            relationType.setName(name);
+
+            nextLine = reader.readLine();
+            while (!nextLine.startsWith("-")) {
+                if (nextLine.startsWith("extends")) {
+                    String value = nextLine.split(":")[1].replaceAll("\\s", "");
+                    if (!value.equals("\"-\"")) {
+                        for (RelationType parentType : relationTypes) {
+                            if (parentType.getName().equals(value.replaceAll("\"", ""))) {
+                                relationType.setParentType(parentType);
+                            }
+                        }
+                    }
+                } else if (nextLine.startsWith("description")) {
+                    String value = nextLine.split(":")[1].replaceAll("\\s", "");
+                    relationType.setDescription(value.replaceAll("\"", ""));
+                } else if (nextLine.startsWith("properties")) {
+                    relationType.setProperties(readProperties(reader, nextLine));
+                } else if (nextLine.startsWith("operations")) {
+                    relationType.setOperations(readOperations(reader, nextLine));
+                }
+                nextLine = reader.readLine();
+            }
+            relationTypes.add(relationType);
+            nextLine = reader.readLine();
+        }
     }
 
     private  void readComponents(BufferedReader reader) throws IOException, InvalidPropertyValueException {
@@ -185,14 +254,11 @@ public class AnalysisService {
                 while (!nextLine.startsWith("-")) {
                     if (nextLine.startsWith("type")) {
                         String value = nextLine.split(":")[1].replaceAll("\\s", "");
-                        ComponentType componentType = null;
-
-                        for (int i = 0; i < componentTypes.size(); i++) {
-                            if (componentTypes.get(i).getName().equals(value)) {
-                                componentType = componentTypes.get(i);
+                        for (ComponentType componentType : componentTypes) {
+                            if (componentType.getName().equals(value.replaceAll("\"", ""))) {
+                                component.setType(componentType);
                             }
                         }
-                        component.setType(componentType);
                     } else if (nextLine.startsWith("description")) {
                         String value = nextLine.split(":")[1].replaceAll("\\s", "");
                         component.setDescription(value);
@@ -205,15 +271,69 @@ public class AnalysisService {
                     }
                     nextLine = reader.readLine();
                 }
+                components.add(component);
+                nextLine = reader.readLine();
             }
         }
     }
 
-    private void readRelations(BufferedReader reader) {
+    private void readRelations(BufferedReader reader) throws IOException, InvalidRelationException, InvalidPropertyValueException {
+        String nextLine = reader.readLine();
+        while (!nextLine.startsWith("relations")) {
+            nextLine = reader.readLine();
+        }
+        nextLine = reader.readLine();
+        while (nextLine.startsWith("-")) {
+            Relation relation = new Relation();
 
+            String name = nextLine.replaceAll("\\s|-|:", "");
+            relation.setName(name);
+            relation.setId(name);
+
+            nextLine = reader.readLine();
+            while (!nextLine.startsWith("-")) {
+                if (nextLine.startsWith("type")) {
+                    String value = nextLine.split(":")[1].replaceAll("\\s", "");
+                    for (RelationType relationType : relationTypes) {
+                        if (relationType.getName().equals(value.replaceAll("\"", ""))) {
+                            relation.setType(relationType);
+                        }
+                    }
+                }
+                else if (nextLine.startsWith("description")) {
+                    String value = nextLine.split(":")[1].replaceAll("\\s", "");
+                    relation.setDescription(value.replaceAll("\"", ""));
+                }
+                else if (nextLine.startsWith("source")) {
+                    String value = nextLine.split(":")[1].replaceAll("\\s", "");
+                    for (Component component : components) {
+                        if (component.getName().equals(value.replaceAll("\"", ""))) {
+                            relation.setSource(component);
+                        }
+                    }
+                }
+                else if (nextLine.startsWith("target")) {
+                    String value = nextLine.split(":")[1].replaceAll("\\s", "");
+                    for (Component component : components) {
+                        if (component.getName().equals(value.replaceAll("\"", ""))) {
+                            relation.setSource(component);
+                        }
+                    }
+                }
+                else if (nextLine.startsWith("properties")) {
+                    relation.setProperties(readProperties(reader, nextLine));
+                } else if (nextLine.startsWith("operations")) {
+                    relation.setOperations(readOperations(reader, nextLine));
+                }
+                nextLine = reader.readLine();
+            }
+            relation.setConfidence(Confidence.SUSPECTED);
+            relations.add(relation);
+            nextLine = reader.readLine();
+        }
     }
 
-    private void parseFile(URL url) throws IOException, InvalidPropertyValueException {
+    private void parseFile(URL url) throws IOException, InvalidPropertyValueException, InvalidRelationException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
         String nextLine = reader.readLine();
         reader.mark(0);
