@@ -7,6 +7,12 @@ volumes:
       type: 'none'
       o: 'bind'
       device: ./volume
+  winery:
+    driver: local
+    driver_opts:
+      type: 'none'
+      o: 'bind'
+      device: ./volume/winery
 
 services:
 
@@ -116,6 +122,11 @@ services:
       ANALYSIS_MANAGER_PLUGIN_REGISTRATION_URL: http://analysismanager:8080/plugin-registration
       MODELS_SERVICE_URL: http://modelsservice:8081
       SPRING_RABBITMQ_HOST: rabbitmq
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     volumes:
-      - demaf:/var/repository
-      - ./data:/app/target/data
+      - demaf:/usr/share
+      - winery:/var/repository
+      #- ./data:/app/target/data
+    ports:
+      - 8082:8082
+      - 5005:5005

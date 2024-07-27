@@ -125,7 +125,7 @@ public class PluginRegistrationRunner implements ApplicationRunner {
             return true;
         } catch (IOException e) {
             // Connection failed or timed out
-            LOG.info("Service " + hostNameOrIP + " isn't reachable. Attempt(" + attempt + "/" + maxAttempts +")");
+            LOG.info("Service " + hostNameOrIP + " isn't reachable. Attempt (" + attempt + "/" + maxAttempts +")");
             return false;
         }
     }

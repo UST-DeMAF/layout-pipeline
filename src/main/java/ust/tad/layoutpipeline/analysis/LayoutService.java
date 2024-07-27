@@ -1,11 +1,16 @@
 package ust.tad.layoutpipeline.analysis;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ust.tad.layoutpipeline.models.tadm.*;
+import ust.tad.layoutpipeline.registration.PluginRegistrationRunner;
 
 import java.io.*;
 import java.util.*;
 
 public class LayoutService {
+    private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
+
     private List<Component> components;
     private List<ComponentType> componentTypes;
     private List<Relation>  relations;
