@@ -2,12 +2,17 @@ package ust.tad.layoutpipeline.analysis;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 import ust.tad.layoutpipeline.models.tadm.*;
 import ust.tad.layoutpipeline.registration.PluginRegistrationRunner;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
+@Service
 public class LayoutService {
     private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
 
@@ -16,7 +21,8 @@ public class LayoutService {
     private List<Relation>  relations;
     private UUID transformationProcessId;
 
-    private String dotPath;
+    private String path;
+    private String file;
 
     private Map<String, float[]> layout = new HashMap<>();
 
@@ -39,13 +45,21 @@ public class LayoutService {
 
     void generateLayout(TechnologyAgnosticDeploymentModel tadm) {
         components = tadm.getComponents();
+        componentTypes = tadm.getComponentTypes();
         relations = tadm.getRelations();
         transformationProcessId = tadm.getTransformationProcessId();
 
-        dotPath = "/app/target/data/inputs/" + transformationProcessId.toString() +".dot";
+        path = "/var/repository/graphviz/";
+        file = transformationProcessId.toString() +".dot";
 
-        createDotFile(components, relations, dotPath);
-        layout = callGraphVIZ(dotPath);
+        try {
+            Files.createDirectories(Paths.get(path));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        createDotFile(components, relations, path + file);
+        layout = callGraphVIZ(path + file);
 
         createNodeTypes(componentTypes, transformationProcessId);
         createServiceTemplate(components, relations, transformationProcessId);
@@ -105,7 +119,7 @@ public class LayoutService {
             while ((line = reader.readLine()) != null) {
                 if (line.startsWith("node")) {
                     String[] splits = line.split(" ");
-                    String node = splits[1];
+                    String node = splits[1].replaceAll("\"", "");
                     float[] coords = {Float.parseFloat(splits[2]), Float.parseFloat(splits[3])};
                     output.put(node, coords);
                 }
@@ -119,7 +133,15 @@ public class LayoutService {
 
     void createNodeTypes(List<ComponentType> componentTypes, UUID id ) {
         for (ComponentType componentType : componentTypes) {
-            try (FileWriter writer = new FileWriter("/var/repository/nodetypes/ust.tad.nodetypes/" + id.toString() + "/" + componentType.getName() + "/NodeType.tosca")){
+            String nodeTypesPath = "/var/repository/nodetypes/ust.tad.nodetypes/" + id.toString() + "/" + componentType.getName() + "/";
+
+            try {
+                Files.createDirectories(Paths.get(nodeTypesPath));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            try (FileWriter writer = new FileWriter(nodeTypesPath + "NodeType.tosca")){
                 writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\nnode_types:");
                 writer.write("ust.tad.nodetypes." + componentType.getName());
                 writer.write("derived_from: tosca.nodes.Root\nmetadata:");
@@ -157,7 +179,11 @@ public class LayoutService {
             Node node = new Node();
             int count = 0;
 
-            node.type = component.getType().getName();
+            try {
+                node.type = component.getType().getName();
+            } catch (Exception e) {
+                LOG.info("Component type of the component " + component.getName() + " is not defined.");
+            }
 
             if(typeCount.containsKey(node.type)) {
                 count = typeCount.get(node.type) + 1;
@@ -166,16 +192,17 @@ public class LayoutService {
                 typeCount.put(node.type, count);
             }
 
-            node.name = component.getType().getName() + "_" + count;
-
-            node.x = layout.get(node.name)[0];
-            node.y = layout.get(node.name)[1];
             node.displayName = component.getName();
+            node.name = component.getName() + "_" + count;
             node.properties = component.getProperties();
+
+            float[] coords = layout.get(node.displayName);
+            node.x = coords[0];
+            node.y = coords[1];
 
             for(Relation relation : relations) {
                 Requirement requirement = new Requirement();
-                if(relation.getSource().equals(node.displayName)) {
+                if(relation.getSource().getName().equals(node.displayName)) {
                     requirement.type = relation.getType().getName();
                     requirement.node = relation.getTarget().getName(); // Target node displayName
                     requirement.relationship = relation.getName();
@@ -184,10 +211,18 @@ public class LayoutService {
                 }
             }
 
-            nodes.put(node.displayName, node);
+            nodes.put(node.name, node);
         }
 
-        try (FileWriter writer = new FileWriter("/var/repository/servicetemplates/ust.tad.servicetemplates/" + id.toString() + "/ServiceTemplate.tosca")) {
+        String serviceTemplatePath = "/var/repository/servicetemplates/ust.tad.servicetemplates/" + id.toString() + "/";
+
+        try {
+            Files.createDirectories(Paths.get(serviceTemplatePath));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        try (FileWriter writer = new FileWriter(serviceTemplatePath + "ServiceTemplate.tosca")) {
             writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\nmetadata:");
             writer.write("targetNamespace: \"ust.tad.servicetemplates\"");
             writer.write("name: " + id.toString());
@@ -203,16 +238,18 @@ public class LayoutService {
                 for (Property property : node.properties) {
                     writer.write(property.getKey() + ": " + property.getValue());
                 }
-                writer.write("requirements:");
-                for (Requirement requirement : node.requirements) {
-                    if (requirement.type.equals("HostedOn")) {
-                        writer.write("- host:");
-                    } else if (requirement.type.equals("ConnectsTo")) {
-                        writer.write("- connect:");
+                if (node.requirements != null) {
+                    writer.write("requirements:");
+                    for (Requirement requirement : node.requirements) {
+                        if (requirement.type.equals("HostedOn")) {
+                            writer.write("- host:");
+                        } else if (requirement.type.equals("ConnectsTo")) {
+                            writer.write("- connect:");
+                        }
+                        writer.write("node: " + nodes.get(requirement.node).name);
+                        writer.write("relationship: " + requirement.relationship);
+                        writer.write("capability: " + requirement.capability);
                     }
-                    writer.write("node: " + nodes.get(requirement.node).name);
-                    writer.write("relationship: " + requirement.relationship);
-                    writer.write("capability: " + requirement.capability);
                 }
             }
             writer.write("relationship_templates:");
