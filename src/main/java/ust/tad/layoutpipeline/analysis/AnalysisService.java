@@ -89,8 +89,8 @@ public class AnalysisService {
                 cachedLines.add(reader.readLine().trim());
                 if (cachedLines.get(0).startsWith("name") && cachedLines.get(1).startsWith("fileURI")) {
                     Artifact artifact = new Artifact();
-                    String[] split = line.split(":");
-                    if (split.length == 2) {
+                    String[] split = line.split(":", 2);
+                    if (!split[1].isEmpty()) {
                         artifact.setType(split[1].trim());
                     } else {
                         artifact.setType(split[0].replaceFirst("- ",""));
@@ -138,10 +138,10 @@ public class AnalysisService {
             line = reader.readLine().trim();
             while (line.startsWith("-")) {
                 Property property = new Property();
-                String[] split = line.split(":");
-                if (split.length == 2) {
-                    property.setKey(split[0].replaceAll("\\s|-", ""));
-                    property.setValue(split[1].replaceAll("\\s|-", ""));
+                String[] split = line.split(":", 2);
+                if (!split[1].isEmpty()) {
+                    property.setKey(split[0].replaceFirst("- ", ""));
+                    property.setValue(split[1].trim().replaceAll("\"", ""));
                     property.setType(PropertyType.STRING);
                     property.setRequired(false);
                     property.setConfidence(Confidence.SUSPECTED);
@@ -151,7 +151,7 @@ public class AnalysisService {
                     line = reader.readLine().trim();
                     while (reader.ready() && !line.startsWith("-") && !line.startsWith("operations")) {
                         if (line.startsWith("type")) {
-                            switch (line.split(":")[1].replaceAll("\\s|\"", "")) {
+                            switch (line.split(":", 2)[1].replaceAll("\\s|\"", "")) {
                                 case "BOOLEAN":
                                     property.setType(PropertyType.BOOLEAN);
                                     property.setValue(false);
@@ -172,19 +172,19 @@ public class AnalysisService {
                         } else if (line.startsWith("value")) {
                             switch (property.getType()) {
                                 case BOOLEAN:
-                                    property.setValue(line.split(":")[1].replaceAll("\\s|\"", "").toLowerCase().equals("true"));
+                                    property.setValue(line.split(":", 2)[1].replaceAll("\\s|\"", "").toLowerCase().equals("true"));
                                     break;
                                 case DOUBLE:
-                                    property.setValue(Double.valueOf(line.split(":")[1].replaceAll("\\s|\"", "")));
+                                    property.setValue(Double.valueOf(line.split(":", 2)[1].replaceAll("\\s|\"", "")));
                                     break;
                                 case INTEGER:
-                                    property.setValue(Integer.valueOf(line.split(":")[1].replaceAll("\\s|\"", "")));
+                                    property.setValue(Integer.valueOf(line.split(":", 2)[1].replaceAll("\\s|\"", "")));
                                 default:
-                                    property.setValue(line.split(":")[1].replaceAll("\\s|\"", ""));
+                                    property.setValue(line.split(":", 2)[1].replaceAll("\\s|\"", ""));
                                     break;
                             }
                         } else if (line.startsWith("required")) {
-                            property.setRequired(line.split(":")[1].equals("true"));
+                            property.setRequired(line.split(":", 2)[1].toLowerCase().equals("true"));
                         }
                         line = reader.readLine().trim();
                     }
@@ -207,14 +207,18 @@ public class AnalysisService {
         while (line.startsWith("-")) {
             ComponentType componentType = new ComponentType();
 
-            String name = line.split(":")[0].replaceFirst("- ", "");
-            componentType.setName(name);
+            String[] split = line.split(":", 2);
+            if (!split[1].isEmpty()) {
+                componentType.setName(split[1].replaceAll("\\s|\"", ""));
+            } else {
+                componentType.setName(split[0].replaceFirst("- ", ""));
+            }
 
             line = reader.readLine().trim();
             while (!line.startsWith("-") && !line.startsWith("relation_types")) {
                 if (line.startsWith("extends")) {
-                    String value = line.split(":")[1].replaceAll("\\s|\"", "");
-                    if (!value.equals("\"-\"")) {
+                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
+                    if (!value.equals("-")) {
                         for (ComponentType parentType : componentTypes) {
                             if (parentType.getName().equals(value)) {
                                 componentType.setParentType(parentType);
@@ -223,7 +227,7 @@ public class AnalysisService {
                     }
                     line = reader.readLine().trim();
                 } else if (line.startsWith("description")) {
-                    String value = line.split(":")[1].trim().replaceAll("\"", "");
+                    String value = line.split(":", 2)[1].trim().replaceAll("\"", "");
                     componentType.setDescription(value);
                     line = reader.readLine().trim();
                 } else if (line.startsWith("properties")) {
@@ -243,14 +247,14 @@ public class AnalysisService {
         line = reader.readLine().trim();
         while (line.startsWith("-")) {
             RelationType relationType = new RelationType();
-            String name = line.split(":")[0].replaceFirst("- ", "");
+            String name = line.split(":", 2)[0].replaceFirst("- ", "");
             relationType.setName(name);
 
             line = reader.readLine().trim();
             while (reader.ready() && !line.startsWith("-")) {
                 if (line.startsWith("extends")) {
-                    String value = line.split(":")[1].replaceAll("\\s|\"", "");
-                    if (!value.equals("\"-\"")) {
+                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
+                    if (!value.equals("-")) {
                         for (RelationType parentType : relationTypes) {
                             if (parentType.getName().equals(value)) {
                                 relationType.setParentType(parentType);
@@ -259,8 +263,8 @@ public class AnalysisService {
                     }
                     line = reader.readLine().trim();
                 } else if (line.startsWith("description")) {
-                    String value = line.split(":")[1].trim();
-                    relationType.setDescription(value.replaceAll("\\s|\"", ""));
+                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
+                    relationType.setDescription(value);
                     line = reader.readLine().trim();
                 } else if (line.startsWith("properties")) {
                     relationType.setProperties(readProperties());
@@ -281,8 +285,8 @@ public class AnalysisService {
         while (line.startsWith("-")) {
             Component component = new Component();
 
-            String[] split = line.split(":");
-            if (split.length == 2) {
+            String[] split = line.split(":", 2);
+            if (!split[1].isEmpty()) {
                 component.setName(split[1].replaceAll("\\s|\"", ""));
             } else {
                 component.setName(split[0].replaceFirst("- ", ""));
@@ -292,7 +296,7 @@ public class AnalysisService {
             while (!line.startsWith("-") && !line.startsWith("relations")) {
                 if (cachedLines.isEmpty()) {
                     if (line.startsWith("type")) {
-                        String value = line.split(":")[1].replaceAll("\\s|\"", "");
+                        String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
                         for (ComponentType componentType : componentTypes) {
                             if (componentType.getName().equals(value)) {
                                 component.setType(componentType);
@@ -300,7 +304,7 @@ public class AnalysisService {
                         }
                         line = reader.readLine().trim();
                     } else if (line.startsWith("description")) {
-                        String value = line.split(":")[1].replaceAll("\\s", "");
+                        String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
                         component.setDescription(value);
                         line = reader.readLine().trim();
                     } else if (line.startsWith("properties")) {
@@ -335,13 +339,13 @@ public class AnalysisService {
         while (line.startsWith("-")) {
             Relation relation = new Relation();
 
-            String name = line.replaceAll("\\s|-|:", "");
+            String name = line.split(":", 2)[0].replaceFirst("- ", "");
             relation.setName(name);
 
             line = reader.readLine().trim();
             while (!line.startsWith("-") && !line.startsWith("component_types")) {
                 if (line.startsWith("type")) {
-                    String value = line.split(":")[1].replaceAll("\\s|\"", "");
+                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
                     for (RelationType relationType : relationTypes) {
                         if (relationType.getName().equals(value)) {
                             relation.setType(relationType);
@@ -349,11 +353,11 @@ public class AnalysisService {
                     }
                     line = reader.readLine().trim();
                 } else if (line.startsWith("description")) {
-                    String value = line.split(":")[1].replaceAll("\\s|\"", "");
+                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
                     relation.setDescription(value);
                     line = reader.readLine().trim();
                 } else if (line.startsWith("source")) {
-                    String value = line.split(":")[1].replaceAll("\\s|\"", "");
+                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
                     for (Component component : components) {
                         if (component.getName().equals(value)) {
                             relation.setSource(component);
@@ -361,7 +365,7 @@ public class AnalysisService {
                     }
                     line = reader.readLine().trim();
                 } else if (line.startsWith("target")) {
-                    String value = line.split(":")[1].replaceAll("\\s|\"", "");
+                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
                     for (Component component : components) {
                         if (component.getName().equals(value)) {
                             relation.setTarget(component);
