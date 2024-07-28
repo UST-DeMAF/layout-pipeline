@@ -12,7 +12,7 @@ volumes:
     driver_opts:
       type: 'none'
       o: 'bind'
-      device: ./volume/winery
+      device: ./winery
 
 services:
 
@@ -109,6 +109,19 @@ services:
     ports:
       - 8081:8081
 
+  # Eclipse Winery
+  winery:
+    container_name: winery
+    image: opentosca/radon-gmt:latest
+    environment:
+      PUBLIC_HOSTNAME: "localhost"
+      WINERY_FEATURE_RADON: "true"
+      WINERY_REPOSITORY_PROVIDER: "yaml"
+    volumes:
+      - winery:/var/repository
+    ports:
+      - 80:8080
+
   # Plugins
   layout-pipeline:
     container_name: layout-pipeline
@@ -126,7 +139,6 @@ services:
     volumes:
       - demaf:/usr/share
       - winery:/var/repository
-      #- ./data:/app/target/data
     ports:
       - 8082:8082
       - 5005:5005
