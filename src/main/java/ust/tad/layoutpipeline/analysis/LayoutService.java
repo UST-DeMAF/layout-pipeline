@@ -114,6 +114,7 @@ public class LayoutService {
             Process process = processBuilder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
+            float maxY = 0;
             String line;
 
             while ((line = reader.readLine()) != null) {
@@ -121,9 +122,18 @@ public class LayoutService {
                     String[] splits = line.split(" ");
                     String node = splits[1].replaceAll("\"", "");
                     float[] coords = {Float.parseFloat(splits[2]), Float.parseFloat(splits[3])};
+                    maxY = coords[1] > maxY ? coords[1] : maxY;
                     output.put(node, coords);
                 }
             }
+
+            for (Map.Entry<String, float[]> entry : output.entrySet()) {
+                float[] coords = entry.getValue();
+                coords[0] = Math.round(coords[0] * 100);
+                coords[1] = Math.round(Math.abs(coords[1] - maxY) * 100 + 100);
+                entry.setValue(coords);
+            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -142,28 +152,28 @@ public class LayoutService {
             }
 
             try (FileWriter writer = new FileWriter(nodeTypesPath + "NodeType.tosca")){
-                writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\nnode_types:");
-                writer.write("ust.tad.nodetypes." + componentType.getName());
-                writer.write("derived_from: tosca.nodes.Root\nmetadata:");
-                writer.write("targetNamespace: ust.tad.nodetypes\nabstract: \"false\"\nfinal: \"false\"\nproperties:");
+                writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\nnode_types:\n");
+                writer.write("ust.tad.nodetypes." + componentType.getName() + "\n");
+                writer.write("derived_from: tosca.nodes.Root\nmetadata:\n");
+                writer.write("targetNamespace: ust.tad.nodetypes\nabstract: \"false\"\nfinal: \"false\"\nproperties:\n");
                 List<Property> properties = componentType.getProperties();
                 for (Property property : properties) {
-                    writer.write(property.getKey() + ":");
-                    writer.write("type: " + property.getType().name());
-                    writer.write("required: " + property.getRequired());
-                    writer.write("default: " + property.getValue().toString());
+                    writer.write(property.getKey() + ":\n");
+                    writer.write("type: " + property.getType().name() + "\n");
+                    writer.write("required: " + property.getRequired() + "\n");
+                    writer.write("default: " + property.getValue().toString() + "\n");
                 }
-                writer.write("requirements:\n - host:");
-                writer.write(" capability: tosca.capabilities.Node");
-                writer.write(" relationship: tosca.relationships.HostedOn");
-                writer.write("occurrences: [ 1, 1 ]");
-                writer.write("interfaces:\n Standard:");
-                writer.write("type: tosca.interfaces.node.lifecycle.Standard\noperations:");
-                writer.write("stop:\ndescription: The standard stop operation");
-                writer.write("start:\ndescription: The standard start operation");
-                writer.write("create:\ndescription: The standard create operation");
-                writer.write("configure:\ndescription: The standard configure operation");
-                writer.write("delete:\ndescription: The standard delete operation");
+                writer.write("requirements:\n - host:\n");
+                writer.write(" capability: tosca.capabilities.Node\n");
+                writer.write(" relationship: tosca.relationships.HostedOn\n");
+                writer.write("occurrences: [ 1, 1 ]\n");
+                writer.write("interfaces:\n Standard:\n");
+                writer.write("type: tosca.interfaces.node.lifecycle.Standard\noperations:\n");
+                writer.write("stop:\ndescription: The standard stop operation\n");
+                writer.write("start:\ndescription: The standard start operation\n");
+                writer.write("create:\ndescription: The standard create operation\n");
+                writer.write("configure:\ndescription: The standard configure operation\n");
+                writer.write("delete:\ndescription: The standard delete operation\n");
                 writer.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -200,6 +210,7 @@ public class LayoutService {
             node.x = coords[0];
             node.y = coords[1];
 
+            List<Requirement> requirements = new ArrayList<>();
             for(Relation relation : relations) {
                 Requirement requirement = new Requirement();
                 if(relation.getSource().getName().equals(node.displayName)) {
@@ -207,11 +218,11 @@ public class LayoutService {
                     requirement.node = relation.getTarget().getName(); // Target node displayName
                     requirement.relationship = relation.getName();
                     requirement.capability = "feature";
-                    node.requirements.add(requirement);
+                    requirements.add(requirement);
                 }
             }
-
-            nodes.put(node.name, node);
+            node.requirements = requirements;
+            nodes.put(node.displayName, node);
         }
 
         String serviceTemplatePath = "/var/repository/servicetemplates/ust.tad.servicetemplates/" + id.toString() + "/";
@@ -223,39 +234,40 @@ public class LayoutService {
         }
 
         try (FileWriter writer = new FileWriter(serviceTemplatePath + "ServiceTemplate.tosca")) {
-            writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\nmetadata:");
-            writer.write("targetNamespace: \"ust.tad.servicetemplates\"");
-            writer.write("name: " + id.toString());
-            writer.write("topology_template:\nnode_templates:");
+            writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\nmetadata:\n");
+            writer.write("targetNamespace: \"ust.tad.servicetemplates\"\n");
+            writer.write("name: " + id.toString() + "\n");
+            writer.write("topology_template:\nnode_templates:\n");
             for (Node node : nodes.values()) {
-                writer.write(node.name + ":");
-                writer.write("type: ust.tad.nodetypes" + node.type);
-                writer.write("metadata:");
-                writer.write("x: " + node.x);
-                writer.write("y: " + node.y);
-                writer.write("displayName: " + node.displayName);
-                writer.write("properties:");
+                writer.write(node.name + ":\n");
+                writer.write("type: ust.tad.nodetypes." + node.type + "\n");
+                writer.write("metadata:\n");
+                writer.write("x: '" + node.x + "'\n");
+                writer.write("y: '" + node.y + "'\n");
+                writer.write("displayName: " + node.displayName + "\n");
+                writer.write("properties:\n");
                 for (Property property : node.properties) {
-                    writer.write(property.getKey() + ": " + property.getValue());
+                    writer.write(property.getKey() + ": " + property.getValue() + "\n");
                 }
-                if (node.requirements != null) {
-                    writer.write("requirements:");
+                if (!node.requirements.isEmpty()) {
+                    writer.write("requirements:\n");
                     for (Requirement requirement : node.requirements) {
                         if (requirement.type.equals("HostedOn")) {
-                            writer.write("- host:");
+                            writer.write("- host:\n");
                         } else if (requirement.type.equals("ConnectsTo")) {
-                            writer.write("- connect:");
+                            writer.write("- connect:\n");
                         }
-                        writer.write("node: " + nodes.get(requirement.node).name);
-                        writer.write("relationship: " + requirement.relationship);
-                        writer.write("capability: " + requirement.capability);
+                        writer.write("node: " + nodes.get(requirement.node).name + "\n");
+                        writer.write("relationship: " + requirement.relationship + "\n");
+                        writer.write("capability: " + requirement.capability + "\n");
                     }
                 }
+                writer.write("\n");
             }
-            writer.write("relationship_templates:");
+            writer.write("relationship_templates: \n");
             for (Relation relation : relations) {
-                writer.write(relation.getName() + ":");
-                writer.write("type: tosca.relationships." + relation.getType().getName());
+                writer.write(relation.getName() + ":\n");
+                writer.write("type: tosca.relationships." + relation.getType().getName() + "\n");
             }
             writer.close();
         } catch (IOException e) {
