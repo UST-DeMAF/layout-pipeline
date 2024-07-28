@@ -152,28 +152,41 @@ public class LayoutService {
             }
 
             try (FileWriter writer = new FileWriter(nodeTypesPath + "NodeType.tosca")){
-                writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\nnode_types:\n");
-                writer.write("ust.tad.nodetypes." + componentType.getName() + "\n");
-                writer.write("derived_from: tosca.nodes.Root\nmetadata:\n");
-                writer.write("targetNamespace: ust.tad.nodetypes\nabstract: \"false\"\nfinal: \"false\"\nproperties:\n");
+                writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\n");
+                writer.write("node_types:\n");
+                writer.write("  ust.tad.nodetypes." + componentType.getName() + "\n");
+                writer.write("    derived_from: tosca.nodes.Root\n");
+                writer.write("    metadata:\n");
+                writer.write("      targetNamespace: ust.tad.nodetypes\n");
+                writer.write("      abstract: \"false\"\n");
+                writer.write("      final: \"false\"\n");
+                writer.write("      properties:\n");
                 List<Property> properties = componentType.getProperties();
                 for (Property property : properties) {
-                    writer.write(property.getKey() + ":\n");
-                    writer.write("type: " + property.getType().name() + "\n");
-                    writer.write("required: " + property.getRequired() + "\n");
-                    writer.write("default: " + property.getValue().toString() + "\n");
+                    writer.write("      " + property.getKey() + ":\n");
+                    writer.write("        type: " + property.getType().name() + "\n");
+                    writer.write("        required: " + property.getRequired() + "\n");
+                    writer.write("        default: " + property.getValue().toString() + "\n");
                 }
-                writer.write("requirements:\n - host:\n");
-                writer.write(" capability: tosca.capabilities.Node\n");
-                writer.write(" relationship: tosca.relationships.HostedOn\n");
-                writer.write("occurrences: [ 1, 1 ]\n");
-                writer.write("interfaces:\n Standard:\n");
-                writer.write("type: tosca.interfaces.node.lifecycle.Standard\noperations:\n");
-                writer.write("stop:\ndescription: The standard stop operation\n");
-                writer.write("start:\ndescription: The standard start operation\n");
-                writer.write("create:\ndescription: The standard create operation\n");
-                writer.write("configure:\ndescription: The standard configure operation\n");
-                writer.write("delete:\ndescription: The standard delete operation\n");
+                writer.write("    requirements:\n");
+                writer.write("      - host:\n");
+                writer.write("          capability: tosca.capabilities.Node\n");
+                writer.write("          relationship: tosca.relationships.HostedOn\n");
+                writer.write("          occurrences: [ 1, 1 ]\n");
+                writer.write("    interfaces:\n");
+                writer.write("      Standard:\n");
+                writer.write("        type: tosca.interfaces.node.lifecycle.Standard\n");
+                writer.write("        operations:\n");
+                writer.write("          stop:\n");
+                writer.write("            description: The standard stop operation\n");
+                writer.write("          start:\n");
+                writer.write("            description: The standard start operation\n");
+                writer.write("          create:\n");
+                writer.write("            description: The standard create operation\n");
+                writer.write("          configure:\n");
+                writer.write("            description: The standard configure operation\n");
+                writer.write("          delete:\n");
+                writer.write("            description: The standard delete operation\n");
                 writer.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -234,40 +247,42 @@ public class LayoutService {
         }
 
         try (FileWriter writer = new FileWriter(serviceTemplatePath + "ServiceTemplate.tosca")) {
-            writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\nmetadata:\n");
-            writer.write("targetNamespace: \"ust.tad.servicetemplates\"\n");
-            writer.write("name: " + id.toString() + "\n");
-            writer.write("topology_template:\nnode_templates:\n");
+            writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\n");
+            writer.write("metadata:\n");
+            writer.write("  targetNamespace: \"ust.tad.servicetemplates\"\n");
+            writer.write("  name: " + id.toString() + "\n");
+            writer.write("topology_template:\n");
+            writer.write("  node_templates:\n");
             for (Node node : nodes.values()) {
-                writer.write(node.name + ":\n");
-                writer.write("type: ust.tad.nodetypes." + node.type + "\n");
-                writer.write("metadata:\n");
-                writer.write("x: '" + node.x + "'\n");
-                writer.write("y: '" + node.y + "'\n");
-                writer.write("displayName: " + node.displayName + "\n");
-                writer.write("properties:\n");
+                writer.write("    "+node.name + ":\n");
+                writer.write("      type: ust.tad.nodetypes." + node.type + "\n");
+                writer.write("      metadata:\n");
+                writer.write("        x: '" + node.x + "'\n");
+                writer.write("        y: '" + node.y + "'\n");
+                writer.write("        displayName: " + node.displayName + "\n");
+                writer.write("      properties:\n");
                 for (Property property : node.properties) {
-                    writer.write(property.getKey() + ": " + property.getValue() + "\n");
+                    writer.write("        " + property.getKey() + ": " + property.getValue() + "\n");
                 }
                 if (!node.requirements.isEmpty()) {
-                    writer.write("requirements:\n");
+                    writer.write("      requirements:\n");
                     for (Requirement requirement : node.requirements) {
                         if (requirement.type.equals("HostedOn")) {
-                            writer.write("- host:\n");
+                            writer.write("        - host:\n");
                         } else if (requirement.type.equals("ConnectsTo")) {
-                            writer.write("- connect:\n");
+                            writer.write("        - connect:\n");
                         }
-                        writer.write("node: " + nodes.get(requirement.node).name + "\n");
-                        writer.write("relationship: " + requirement.relationship + "\n");
-                        writer.write("capability: " + requirement.capability + "\n");
+                        writer.write("            node: " + nodes.get(requirement.node).name + "\n");
+                        writer.write("            relationship: " + requirement.relationship + "\n");
+                        writer.write("            capability: " + requirement.capability + "\n");
                     }
                 }
-                writer.write("\n");
+                //writer.write("\n"); Ist glaube zu viel Check!
             }
-            writer.write("relationship_templates: \n");
+            writer.write("  relationship_templates: \n");
             for (Relation relation : relations) {
-                writer.write(relation.getName() + ":\n");
-                writer.write("type: tosca.relationships." + relation.getType().getName() + "\n");
+                writer.write("    " + relation.getName() + ":\n");
+                writer.write("      type: tosca.relationships." + relation.getType().getName() + "\n");
             }
             writer.close();
         } catch (IOException e) {
