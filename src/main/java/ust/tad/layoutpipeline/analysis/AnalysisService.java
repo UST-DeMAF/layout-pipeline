@@ -117,7 +117,26 @@ public class AnalysisService {
     private List<Operation> readOperations() throws IOException {
         List<Operation> operations = new ArrayList<>();
         if (line.startsWith("operations") && !line.contains("[]")) {
-            //TODO: Gaining knowledge of structure.
+            //TODO: Needs to be tested.
+            line = reader.readLine().trim();
+            while (line.startsWith("-")) {
+                Operation operation = new Operation();
+
+                String[] split = line.split(":", 2);
+                if (!split[1].isEmpty()) {
+                    operation.setName(split[1].replaceAll("\\s|\"", ""));
+                } else {
+
+                    operation.setName(split[0].replaceFirst("- ", ""));
+                }
+
+                line = reader.readLine().trim();
+                if (line.startsWith("artifacts")) {
+                    operation.setArtifacts(readArtifacts());
+                }
+                operation.setConfidence(Confidence.CONFIRMED);
+                operations.add(operation);
+            }
         } else {
             line = reader.readLine().trim();
         }
