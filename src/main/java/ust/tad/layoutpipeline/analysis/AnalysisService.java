@@ -1,18 +1,10 @@
 package ust.tad.layoutpipeline.analysis;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URL;
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
 import ust.tad.layoutpipeline.analysistask.AnalysisTaskResponseSender;
 import ust.tad.layoutpipeline.analysistask.Location;
 import ust.tad.layoutpipeline.models.ModelsService;
@@ -20,8 +12,21 @@ import ust.tad.layoutpipeline.models.tadm.*;
 import ust.tad.layoutpipeline.models.tsdm.InvalidAnnotationException;
 import ust.tad.layoutpipeline.registration.PluginRegistrationRunner;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 @Service
 public class AnalysisService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
+    private static final Set<String> supportedFileExtensions = Set.of("yaml", "yml");
 
     @Autowired
     ModelsService modelsService;
@@ -31,10 +36,6 @@ public class AnalysisService {
 
     @Autowired
     LayoutService layoutService;
-
-    private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
-
-    private static final Set<String> supportedFileExtensions = Set.of("yaml", "yml");
 
     private BufferedReader reader;
     private String line;
@@ -60,8 +61,7 @@ public class AnalysisService {
             } catch (IOException | InvalidAnnotationException | InvalidPropertyValueException |
                      InvalidRelationException e) {
                 e.printStackTrace();
-                analysisTaskResponseSender.sendFailureResponse(taskId,
-                        e.getClass() + ": " + e.getMessage());
+                analysisTaskResponseSender.sendFailureResponse(taskId, e.getClass() + ": " + e.getMessage());
                 return;
             }
             //modelsService.updateTechnologyAgnosticDeploymentModel(this.tadm);
@@ -197,7 +197,7 @@ public class AnalysisService {
                     break;
             }
         } else if (line.startsWith("required")) {
-            property.setRequired(line.split(":", 2)[1].equalsIgnoreCase("true"));
+            property.setRequired(line.split(":", 2)[1].replaceAll("\\s|\"", "").equalsIgnoreCase("true"));
         }
     }
 
@@ -211,7 +211,13 @@ public class AnalysisService {
 
     private List<Property> readProperties() throws IOException, InvalidPropertyValueException {
         List<Property> properties = new ArrayList<>();
-        if (line.startsWith("properties") && !line.contains("[]")) {
+        String cachedLine = "";
+
+        if (!cachedLines.isEmpty()) {
+            cachedLine = cachedLines.get(0);
+        }
+
+        if ((line.startsWith("properties") && !line.contains("[]")) || (cachedLine.startsWith("properties") && !cachedLine.contains("[]"))) {
             line = reader.readLine().trim();
             while (line.startsWith("-")) {
                 Property property = new Property();
@@ -290,6 +296,7 @@ public class AnalysisService {
                         for (ComponentType parentType : componentTypes) {
                             if (parentType.getName().equals(value)) {
                                 componentType.setParentType(parentType);
+                                break;
                             }
                         }
                     }
@@ -321,17 +328,18 @@ public class AnalysisService {
             line = reader.readLine().trim();
             while (reader.ready() && !line.startsWith("-")) {
                 if (line.startsWith("extends")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
+                    String value = line.split(":", 2)[1].trim().replaceAll("\"", "");
                     if (!value.equals("-")) {
                         for (RelationType parentType : relationTypes) {
                             if (parentType.getName().equals(value)) {
                                 relationType.setParentType(parentType);
+                                break;
                             }
                         }
                     }
                     line = reader.readLine().trim();
                 } else if (line.startsWith("description")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
+                    String value = line.split(":", 2)[1].trim().replaceAll("\"", "");
                     relationType.setDescription(value);
                     line = reader.readLine().trim();
                 } else if (line.startsWith("properties")) {
@@ -361,13 +369,14 @@ public class AnalysisService {
             }
 
             line = reader.readLine().trim();
-            while (!line.startsWith("-") && !line.startsWith("relations")) {
+            do {
                 if (cachedLines.isEmpty()) {
                     if (line.startsWith("type")) {
                         String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
                         for (ComponentType componentType : componentTypes) {
                             if (componentType.getName().equals(value)) {
                                 component.setType(componentType);
+                                break;
                             }
                         }
                         line = reader.readLine().trim();
@@ -383,16 +392,25 @@ public class AnalysisService {
                         component.setArtifacts(readArtifacts());
                     }
                 } else {
-                    String value = cachedLines.get(0).split(":")[1].replaceAll("\\s|\"", "");
-                    for (ComponentType componentType : componentTypes) {
-                        if (componentType.getName().equals(value)) {
-                            component.setType(componentType);
+                    while (!cachedLines.isEmpty()) {
+                        split = cachedLines.get(0).split(":");
+                        if (split[0].startsWith("type")) {
+                            String value = split[1].replaceAll("\\s|\"", "");
+                            for (ComponentType componentType : componentTypes) {
+                                if (componentType.getName().equals(value)) {
+                                    component.setType(componentType);
+                                    break;
+                                }
+                            }
+                        } else if (split[0].startsWith("description")) {
+                            component.setDescription(split[1].trim().replaceAll("\"", ""));
+                        } else if (split[0].startsWith("properties")) {
+                            component.setProperties(readProperties());
                         }
+                        cachedLines.remove(0);
                     }
-                    component.setDescription(cachedLines.get(1).split(":")[1].replaceAll("\\s", ""));
-                    cachedLines.clear();
                 }
-            }
+            } while (!line.startsWith("-") && !line.startsWith("relations"));
             component.setConfidence(Confidence.CONFIRMED);
             components.add(component);
         }
@@ -417,6 +435,7 @@ public class AnalysisService {
                     for (RelationType relationType : relationTypes) {
                         if (relationType.getName().equals(value)) {
                             relation.setType(relationType);
+                            break;
                         }
                     }
                     line = reader.readLine().trim();
@@ -429,6 +448,7 @@ public class AnalysisService {
                     for (Component component : components) {
                         if (component.getName().equals(value)) {
                             relation.setSource(component);
+                            break;
                         }
                     }
                     line = reader.readLine().trim();
@@ -437,6 +457,7 @@ public class AnalysisService {
                     for (Component component : components) {
                         if (component.getName().equals(value)) {
                             relation.setTarget(component);
+                            break;
                         }
                     }
                     line = reader.readLine().trim();
