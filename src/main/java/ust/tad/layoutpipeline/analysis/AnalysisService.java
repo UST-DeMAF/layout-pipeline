@@ -80,6 +80,24 @@ public class AnalysisService {
         this.tadm = new TechnologyAgnosticDeploymentModel(transformationProcessId, properties, components, relations, componentTypes, relationTypes);
     }
 
+    private boolean isDouble(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isInteger(String str) {
+        try {
+            Integer.parseInt(str);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private List<Artifact> readArtifacts() throws IOException {
         List<Artifact> artifacts = new ArrayList<>();
         if (line.startsWith("artifacts") && !line.contains("[]")) {
@@ -93,7 +111,7 @@ public class AnalysisService {
                     if (!split[1].isEmpty()) {
                         artifact.setType(split[1].trim());
                     } else {
-                        artifact.setType(split[0].replaceFirst("- ",""));
+                        artifact.setType(split[0].replaceFirst("- ", ""));
                     }
                     artifact.setName(cachedLines.get(0).split(":")[1].trim().replaceAll("\"", ""));
                     String fileURI = cachedLines.get(1).split(":")[1].trim().replaceAll("\"", "");
@@ -143,6 +161,46 @@ public class AnalysisService {
         return operations;
     }
 
+    void extractProperty(Property property) throws InvalidPropertyValueException {
+        if (line.startsWith("type")) {
+            switch (line.split(":", 2)[1].replaceAll("\\s|\"", "")) {
+                case "BOOLEAN":
+                    property.setType(PropertyType.BOOLEAN);
+                    property.setValue(false);
+                    break;
+                case "DOUBLE":
+                    property.setType(PropertyType.DOUBLE);
+                    property.setValue(0.0);
+                    break;
+                case "INTEGER":
+                    property.setType(PropertyType.INTEGER);
+                    property.setValue(0);
+                    break;
+                default:
+                    property.setType(PropertyType.STRING);
+                    property.setValue("");
+                    break;
+            }
+        } else if (line.startsWith("default_value") || line.startsWith("value")) {
+            switch (property.getType()) {
+                case BOOLEAN:
+                    property.setValue(line.split(":", 2)[1].replaceAll("\\s|\"", "").equalsIgnoreCase("true"));
+                    break;
+                case DOUBLE:
+                    property.setValue(Double.valueOf(line.split(":", 2)[1].replaceAll("\\s|\"", "")));
+                    break;
+                case INTEGER:
+                    property.setValue(Integer.valueOf(line.split(":", 2)[1].replaceAll("\\s|\"", "")));
+                    break;
+                default:
+                    property.setValue(line.split(":", 2)[1].replaceAll("\\s|\"", ""));
+                    break;
+            }
+        } else if (line.startsWith("required")) {
+            property.setRequired(line.split(":", 2)[1].equalsIgnoreCase("true"));
+        }
+    }
+
     private void readGlobalProperties() throws IOException, InvalidPropertyValueException {
         line = reader.readLine().trim();
         while (reader.ready() && !line.startsWith("properties")) {
@@ -159,52 +217,43 @@ public class AnalysisService {
                 Property property = new Property();
                 String[] split = line.split(":", 2);
                 if (!split[1].isEmpty()) {
-                    property.setKey(split[0].replaceFirst("- ", ""));
-                    property.setValue(split[1].trim().replaceAll("\"", ""));
-                    property.setType(PropertyType.STRING);
-                    property.setRequired(false);
-                    property.setConfidence(Confidence.SUSPECTED);
-                    line = reader.readLine().trim();
+                    if (split[0].contains("key")) {
+                        property.setKey(split[1].trim().replaceAll("\"", ""));
+                        line = reader.readLine().trim();
+                        while (reader.ready() && !line.startsWith("-") && !line.startsWith("operations")) {
+                            extractProperty(property);
+                            line = reader.readLine().trim();
+                        }
+                    } else {
+                        property.setKey(split[0].replaceFirst("- ", ""));
+                        String value = split[1].trim().replaceAll("\"", "");
+
+                        boolean typeDouble = isDouble(value);
+                        boolean typeInteger = isInteger(value);
+
+                        if (value.equalsIgnoreCase("false") || value.equalsIgnoreCase("true")) {
+                            property.setValue(value.equalsIgnoreCase("true"));
+                            property.setType(PropertyType.BOOLEAN);
+                        } else if (typeDouble && !typeInteger) {
+                            property.setValue(Double.valueOf(value));
+                            property.setType(PropertyType.DOUBLE);
+                        } else if (typeInteger) {
+                            property.setValue(Integer.valueOf(value));
+                            property.setType(PropertyType.INTEGER);
+                        } else {
+                            property.setValue(value);
+                            property.setType(PropertyType.STRING);
+                        }
+
+                        property.setRequired(false);
+                        property.setConfidence(Confidence.SUSPECTED);
+                        line = reader.readLine().trim();
+                    }
                 } else {
                     property.setKey(split[0].replaceAll("\\s|-", ""));
                     line = reader.readLine().trim();
                     while (reader.ready() && !line.startsWith("-") && !line.startsWith("operations")) {
-                        if (line.startsWith("type")) {
-                            switch (line.split(":", 2)[1].replaceAll("\\s|\"", "")) {
-                                case "BOOLEAN":
-                                    property.setType(PropertyType.BOOLEAN);
-                                    property.setValue(false);
-                                    break;
-                                case "DOUBLE":
-                                    property.setType(PropertyType.DOUBLE);
-                                    property.setValue(0.0);
-                                    break;
-                                case "INTEGER":
-                                    property.setType(PropertyType.INTEGER);
-                                    property.setValue(0);
-                                    break;
-                                default:
-                                    property.setType(PropertyType.STRING);
-                                    property.setValue("");
-                                    break;
-                            }
-                        } else if (line.startsWith("value")) {
-                            switch (property.getType()) {
-                                case BOOLEAN:
-                                    property.setValue(line.split(":", 2)[1].replaceAll("\\s|\"", "").toLowerCase().equals("true"));
-                                    break;
-                                case DOUBLE:
-                                    property.setValue(Double.valueOf(line.split(":", 2)[1].replaceAll("\\s|\"", "")));
-                                    break;
-                                case INTEGER:
-                                    property.setValue(Integer.valueOf(line.split(":", 2)[1].replaceAll("\\s|\"", "")));
-                                default:
-                                    property.setValue(line.split(":", 2)[1].replaceAll("\\s|\"", ""));
-                                    break;
-                            }
-                        } else if (line.startsWith("required")) {
-                            property.setRequired(line.split(":", 2)[1].toLowerCase().equals("true"));
-                        }
+                        extractProperty(property);
                         line = reader.readLine().trim();
                     }
                     property.setConfidence(Confidence.CONFIRMED);
