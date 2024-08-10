@@ -74,6 +74,15 @@ public class AnalysisService {
         this.tadm = new TechnologyAgnosticDeploymentModel(transformationProcessId, properties, components, relations, componentTypes, relationTypes);
     }
 
+    public boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NullPointerException | NumberFormatException e) {
+            return false;
+        }
+    }
+
     private List<Artifact> readArtifacts(Object obj) throws IOException {
         List<Artifact> artifacts = new ArrayList<>();
         String fileURI, key;
@@ -188,7 +197,12 @@ public class AnalysisService {
                             property.setRequired(Boolean.parseBoolean(value.toString()));
                             break;
                         default:
-                            property.setKey(key);
+                            if (isNumeric(key)) {
+                                property.setKey("\"" + key + "\"");
+                            } else {
+                                property.setKey(key);
+                            }
+
                             if (value instanceof Map) {
                                 Map<String, Object> valueMap = (Map<String, Object>) value;
                                 for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
@@ -223,8 +237,6 @@ public class AnalysisService {
                                 }
 
                             } else {
-                                property.setValue(value);
-
                                 switch (value.getClass().getSimpleName()) {
                                     case "Boolean":
                                         property.setType(PropertyType.BOOLEAN);
@@ -243,6 +255,7 @@ public class AnalysisService {
                                         property.setValue("");
                                         break;
                                 }
+                                property.setValue(value);
                                 property.setRequired(false);
                             }
                             break;
