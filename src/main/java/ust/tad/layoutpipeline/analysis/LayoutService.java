@@ -143,7 +143,7 @@ public class LayoutService {
 
     void createNodeTypes(List<ComponentType> componentTypes, UUID id ) {
         for (ComponentType componentType : componentTypes) {
-            String nodeTypesPath = "/var/repository/nodetypes/ust.tad.nodetypes/" + id.toString() + "/" + componentType.getName() + "/";
+            String nodeTypesPath = "/var/repository/nodetypes/" + id.toString() + ".ust.tad.nodetypes/" + componentType.getName() + "/";
 
             try {
                 Files.createDirectories(Paths.get(nodeTypesPath));
@@ -154,13 +154,13 @@ public class LayoutService {
             try (FileWriter writer = new FileWriter(nodeTypesPath + "NodeType.tosca")){
                 writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\n");
                 writer.write("node_types:\n");
-                writer.write("  ust.tad.nodetypes." + componentType.getName() + "\n");
+                writer.write("  " + id.toString() + ".ust.tad.nodetypes." + componentType.getName() + ":\n");
                 writer.write("    derived_from: tosca.nodes.Root\n");
                 writer.write("    metadata:\n");
-                writer.write("      targetNamespace: ust.tad.nodetypes\n");
+                writer.write("      targetNamespace: " + id.toString() + ".ust.tad.nodetypes\n");
                 writer.write("      abstract: \"false\"\n");
                 writer.write("      final: \"false\"\n");
-                writer.write("      properties:\n");
+                writer.write("    properties:\n");
                 List<Property> properties = componentType.getProperties();
                 for (Property property : properties) {
                     writer.write("      " + property.getKey() + ":\n");
@@ -254,8 +254,8 @@ public class LayoutService {
             writer.write("topology_template:\n");
             writer.write("  node_templates:\n");
             for (Node node : nodes.values()) {
-                writer.write("    "+node.name + ":\n");
-                writer.write("      type: ust.tad.nodetypes." + node.type + "\n");
+                writer.write("    " + node.name + ":\n");
+                writer.write("      type: " + id.toString() + ".ust.tad.nodetypes." + node.type + "\n");
                 writer.write("      metadata:\n");
                 writer.write("        x: '" + node.x + "'\n");
                 writer.write("        y: '" + node.y + "'\n");

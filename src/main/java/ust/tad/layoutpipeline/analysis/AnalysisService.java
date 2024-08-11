@@ -1,18 +1,11 @@
 package ust.tad.layoutpipeline.analysis;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.URI;
-import java.net.URL;
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-
+import org.yaml.snakeyaml.Yaml;
 import ust.tad.layoutpipeline.analysistask.AnalysisTaskResponseSender;
 import ust.tad.layoutpipeline.analysistask.Location;
 import ust.tad.layoutpipeline.models.ModelsService;
@@ -20,8 +13,18 @@ import ust.tad.layoutpipeline.models.tadm.*;
 import ust.tad.layoutpipeline.models.tsdm.InvalidAnnotationException;
 import ust.tad.layoutpipeline.registration.PluginRegistrationRunner;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URL;
+import java.util.*;
+
 @Service
 public class AnalysisService {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
+    private static final Set<String> supportedFileExtensions = Set.of("yaml", "yml");
 
     @Autowired
     ModelsService modelsService;
@@ -31,14 +34,6 @@ public class AnalysisService {
 
     @Autowired
     LayoutService layoutService;
-
-    private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
-
-    private static final Set<String> supportedFileExtensions = Set.of("yaml", "yml");
-
-    private BufferedReader reader;
-    private String line;
-    private List<String> cachedLines = new ArrayList<>();
 
     private TechnologyAgnosticDeploymentModel tadm;
 
@@ -60,8 +55,7 @@ public class AnalysisService {
             } catch (IOException | InvalidAnnotationException | InvalidPropertyValueException |
                      InvalidRelationException e) {
                 e.printStackTrace();
-                analysisTaskResponseSender.sendFailureResponse(taskId,
-                        e.getClass() + ": " + e.getMessage());
+                analysisTaskResponseSender.sendFailureResponse(taskId, e.getClass() + ": " + e.getMessage());
                 return;
             }
             //modelsService.updateTechnologyAgnosticDeploymentModel(this.tadm);
@@ -80,78 +74,103 @@ public class AnalysisService {
         this.tadm = new TechnologyAgnosticDeploymentModel(transformationProcessId, properties, components, relations, componentTypes, relationTypes);
     }
 
-    private List<Artifact> readArtifacts() throws IOException {
+    public boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NullPointerException | NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private List<Artifact> readArtifacts(Object obj) throws IOException {
         List<Artifact> artifacts = new ArrayList<>();
-        if (line.startsWith("artifacts") && !line.contains("[]")) {
-            line = reader.readLine().trim();
-            while (line.startsWith("-")) {
-                cachedLines.add(reader.readLine().trim());
-                cachedLines.add(reader.readLine().trim());
-                if (cachedLines.get(0).startsWith("name") && cachedLines.get(1).startsWith("fileURI")) {
-                    Artifact artifact = new Artifact();
-                    String[] split = line.split(":", 2);
-                    if (!split[1].isEmpty()) {
-                        artifact.setType(split[1].trim());
-                    } else {
-                        artifact.setType(split[0].replaceFirst("- ",""));
+        String fileURI, key;
+        Object value;
+
+        if (obj instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) obj;
+            for (Map<String, Object> map : list) {
+                Artifact artifact = new Artifact();
+
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    key = entry.getKey();
+                    value = entry.getValue();
+
+                    switch (key) {
+                        case "type":
+                            artifact.setType(value.toString());
+                            break;
+                        case "name":
+                            artifact.setName(value.toString());
+                            break;
+                        case "fileURI":
+                            if (Objects.nonNull(value)) {
+                                fileURI = value.toString();
+                                if (!fileURI.isEmpty() && !fileURI.equals("-")) {
+                                    artifact.setFileUri(URI.create(value.toString()));
+                                }
+                            }
+                            break;
                     }
-                    artifact.setName(cachedLines.get(0).split(":")[1].trim().replaceAll("\"", ""));
-                    String fileURI = cachedLines.get(1).split(":")[1].trim().replaceAll("\"", "");
-                    if (!fileURI.equals("-")) {
-                        artifact.setFileUri(URI.create(fileURI));
-                    }
-                    artifact.setConfidence(Confidence.SUSPECTED);
-                    artifacts.add(artifact);
-                    cachedLines.clear();
-                } else {
-                    return artifacts;
                 }
-                line = reader.readLine().trim();
+                artifact.setConfidence(Confidence.CONFIRMED);
+                artifacts.add(artifact);
             }
-        } else {
-            line = reader.readLine().trim();
         }
         return artifacts;
     }
 
-    private List<Operation> readOperations() throws IOException {
+    private List<Operation> readOperations(Object obj) throws IOException {
         List<Operation> operations = new ArrayList<>();
-        if (line.startsWith("operations") && !line.contains("[]")) {
-            //TODO: Gaining knowledge of structure.
-        } else {
-            line = reader.readLine().trim();
+        String key;
+        Object value;
+
+        if (obj instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) obj;
+            for (Map<String, Object> map : list) {
+                Operation operation = new Operation();
+
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    key = entry.getKey();
+                    value = entry.getValue();
+
+                    switch (key) {
+                        case "name":
+                            operation.setName(value.toString());
+                            break;
+                        case "artifacts":
+                            operation.setArtifacts(readArtifacts(value));
+                    }
+                }
+                operation.setConfidence(Confidence.CONFIRMED);
+                operations.add(operation);
+            }
         }
         return operations;
     }
 
-    private void readGlobalProperties() throws IOException, InvalidPropertyValueException {
-        line = reader.readLine().trim();
-        while (reader.ready() && !line.startsWith("properties")) {
-            line = reader.readLine().trim();
-        }
-        properties = readProperties();
-    }
 
-    private List<Property> readProperties() throws IOException, InvalidPropertyValueException {
+    private List<Property> readProperties(Object obj) throws IOException, InvalidPropertyValueException {
         List<Property> properties = new ArrayList<>();
-        if (line.startsWith("properties") && !line.contains("[]")) {
-            line = reader.readLine().trim();
-            while (line.startsWith("-")) {
+        String key;
+        Object value;
+
+        if (obj instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) obj;
+            for (Map<String, Object> map : list) {
                 Property property = new Property();
-                String[] split = line.split(":", 2);
-                if (!split[1].isEmpty()) {
-                    property.setKey(split[0].replaceFirst("- ", ""));
-                    property.setValue(split[1].trim().replaceAll("\"", ""));
-                    property.setType(PropertyType.STRING);
-                    property.setRequired(false);
-                    property.setConfidence(Confidence.SUSPECTED);
-                    line = reader.readLine().trim();
-                } else {
-                    property.setKey(split[0].replaceAll("\\s|-", ""));
-                    line = reader.readLine().trim();
-                    while (reader.ready() && !line.startsWith("-") && !line.startsWith("operations")) {
-                        if (line.startsWith("type")) {
-                            switch (line.split(":", 2)[1].replaceAll("\\s|\"", "")) {
+
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    key = entry.getKey();
+                    value = entry.getValue();
+
+                    switch (key) {
+                        case "key":
+                            property.setKey(value.toString());
+                            break;
+                        case "type":
+                            switch (value.toString()) {
                                 case "BOOLEAN":
                                     property.setType(PropertyType.BOOLEAN);
                                     property.setValue(false);
@@ -169,232 +188,405 @@ public class AnalysisService {
                                     property.setValue("");
                                     break;
                             }
-                        } else if (line.startsWith("value")) {
-                            switch (property.getType()) {
-                                case BOOLEAN:
-                                    property.setValue(line.split(":", 2)[1].replaceAll("\\s|\"", "").toLowerCase().equals("true"));
-                                    break;
-                                case DOUBLE:
-                                    property.setValue(Double.valueOf(line.split(":", 2)[1].replaceAll("\\s|\"", "")));
-                                    break;
-                                case INTEGER:
-                                    property.setValue(Integer.valueOf(line.split(":", 2)[1].replaceAll("\\s|\"", "")));
-                                default:
-                                    property.setValue(line.split(":", 2)[1].replaceAll("\\s|\"", ""));
-                                    break;
+                            break;
+                        case "default_value":
+                        case "value":
+                            property.setValue(value);
+                            break;
+                        case "required":
+                            property.setRequired(Boolean.parseBoolean(value.toString()));
+                            break;
+                        default:
+                            if (isNumeric(key)) {
+                                property.setKey("\"" + key + "\"");
+                            } else {
+                                property.setKey(key);
                             }
-                        } else if (line.startsWith("required")) {
-                            property.setRequired(line.split(":", 2)[1].toLowerCase().equals("true"));
-                        }
-                        line = reader.readLine().trim();
+
+                            if (value instanceof Map) {
+                                Map<String, Object> valueMap = (Map<String, Object>) value;
+                                for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
+                                    key = valueEntry.getKey();
+                                    value = valueEntry.getValue();
+
+                                    switch (key) {
+                                        case "type":
+                                            switch (value.toString()) {
+                                                case "BOOLEAN":
+                                                    property.setType(PropertyType.BOOLEAN);
+                                                    property.setValue(false);
+                                                    break;
+                                                case "DOUBLE":
+                                                    property.setType(PropertyType.DOUBLE);
+                                                    property.setValue(0.0);
+                                                    break;
+                                                case "INTEGER":
+                                                    property.setType(PropertyType.INTEGER);
+                                                    property.setValue(0);
+                                                    break;
+                                                default:
+                                                    property.setType(PropertyType.STRING);
+                                                    property.setValue("");
+                                                    break;
+                                            }
+                                            break;
+                                        case "required":
+                                            property.setRequired(Boolean.parseBoolean(value.toString()));
+                                            break;
+                                    }
+                                }
+
+                            } else {
+                                switch (value.getClass().getSimpleName()) {
+                                    case "Boolean":
+                                        property.setType(PropertyType.BOOLEAN);
+                                        property.setValue(false);
+                                        break;
+                                    case "Double":
+                                        property.setType(PropertyType.DOUBLE);
+                                        property.setValue(0.0);
+                                        break;
+                                    case "Integer":
+                                        property.setType(PropertyType.INTEGER);
+                                        property.setValue(0);
+                                        break;
+                                    default:
+                                        property.setType(PropertyType.STRING);
+                                        property.setValue("");
+                                        break;
+                                }
+                                property.setValue(value);
+                                property.setRequired(false);
+                            }
+                            break;
                     }
-                    property.setConfidence(Confidence.CONFIRMED);
                 }
+                property.setConfidence(Confidence.CONFIRMED);
                 properties.add(property);
             }
-        } else {
-            line = reader.readLine().trim();
         }
         return properties;
     }
 
-    private void readComponentTypes() throws IOException, InvalidPropertyValueException {
-        line = reader.readLine().trim();
-        while (reader.ready() && !line.startsWith("component_types")) {
-            line = reader.readLine().trim();
-        }
-        line = reader.readLine().trim();
-        while (line.startsWith("-")) {
-            ComponentType componentType = new ComponentType();
+    private void readComponentTypes(Object obj) throws IOException, InvalidPropertyValueException {
+        String key, parent;
+        Object value;
 
-            String[] split = line.split(":", 2);
-            if (!split[1].isEmpty()) {
-                componentType.setName(split[1].replaceAll("\\s|\"", ""));
-            } else {
-                componentType.setName(split[0].replaceFirst("- ", ""));
-            }
+        if (obj instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) obj;
+            for (Map<String, Object> map : list) {
+                ComponentType componentType = new ComponentType();
 
-            line = reader.readLine().trim();
-            while (!line.startsWith("-") && !line.startsWith("relation_types")) {
-                if (line.startsWith("extends")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                    if (!value.equals("-")) {
-                        for (ComponentType parentType : componentTypes) {
-                            if (parentType.getName().equals(value)) {
-                                componentType.setParentType(parentType);
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    key = entry.getKey();
+                    value = entry.getValue();
+
+                    switch (key) {
+                        case "name":
+                            componentType.setName(value.toString());
+                            break;
+                        case "extends":
+                            if (Objects.nonNull(value)) {
+                                parent = value.toString();
+                                if (!parent.isEmpty() && !parent.equals("-")) {
+                                    for (ComponentType parentType : componentTypes) {
+                                        if (parentType.getName().equals(value.toString())) {
+                                            componentType.setParentType(parentType);
+                                            break;
+                                        }
+                                    }
+                                }
                             }
-                        }
+                            break;
+                        case "description":
+                            if (Objects.nonNull(value)) {
+                                componentType.setDescription(value.toString());
+                            }
+                            break;
+                        case "properties":
+                            componentType.setProperties(readProperties(value));
+                            break;
+                        case "operations":
+                            componentType.setOperations(readOperations(value));
+                            break;
+                        default:
+                            componentType.setName(key);
+                            if (value instanceof Map) {
+                                Map<String, Object> valueMap = (Map<String, Object>) value;
+                                for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
+                                    key = valueEntry.getKey();
+                                    value = valueEntry.getValue();
+
+                                    switch (key) {
+                                        case "extends":
+                                            if (Objects.nonNull(value)) {
+                                                parent = value.toString();
+                                                if (!parent.isEmpty() && !parent.equals("-")) {
+                                                    for (ComponentType parentType : componentTypes) {
+                                                        if (parentType.getName().equals(value.toString())) {
+                                                            componentType.setParentType(parentType);
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            break;
+                                        case "description":
+                                            if (Objects.nonNull(value)) {
+                                                componentType.setDescription(value.toString());
+                                            }
+                                            break;
+                                        case "properties":
+                                            componentType.setProperties(readProperties(value));
+                                            break;
+                                        case "operations":
+                                            componentType.setOperations(readOperations(value));
+                                            break;
+                                    }
+                                }
+                            }
+                            break;
                     }
-                    line = reader.readLine().trim();
-                } else if (line.startsWith("description")) {
-                    String value = line.split(":", 2)[1].trim().replaceAll("\"", "");
-                    componentType.setDescription(value);
-                    line = reader.readLine().trim();
-                } else if (line.startsWith("properties")) {
-                    componentType.setProperties(readProperties());
-                } else if (line.startsWith("operations")) {
-                    componentType.setOperations(readOperations());
                 }
+                componentTypes.add(componentType);
             }
-            componentTypes.add(componentType);
         }
     }
 
-    private void readRelationTypes() throws IOException, InvalidPropertyValueException {
-        while (reader.ready() && !line.startsWith("relation_types")) {
-            line = reader.readLine().trim();
-        }
-        line = reader.readLine().trim();
-        while (line.startsWith("-")) {
-            RelationType relationType = new RelationType();
-            String name = line.split(":", 2)[0].replaceFirst("- ", "");
-            relationType.setName(name);
+    private void readRelationTypes(Object obj) throws IOException, InvalidPropertyValueException {
+        String key, parent;
+        Object value;
 
-            line = reader.readLine().trim();
-            while (reader.ready() && !line.startsWith("-")) {
-                if (line.startsWith("extends")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                    if (!value.equals("-")) {
-                        for (RelationType parentType : relationTypes) {
-                            if (parentType.getName().equals(value)) {
-                                relationType.setParentType(parentType);
+        if (obj instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) obj;
+            for (Map<String, Object> map : list) {
+                RelationType relationType = new RelationType();
+
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    key = entry.getKey();
+                    value = entry.getValue();
+
+                    relationType.setName(key);
+                    if (value instanceof Map) {
+                        Map<String, Object> valueMap = (Map<String, Object>) value;
+                        for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
+                            key = valueEntry.getKey();
+                            value = valueEntry.getValue();
+                            switch (key) {
+                                case "extends":
+                                    if (Objects.nonNull(value)) {
+                                        parent = value.toString();
+                                        if (!parent.isEmpty() && !parent.equals("-")) {
+                                            for (RelationType parentType : relationTypes) {
+                                                if (parentType.getName().equals(value.toString())) {
+                                                    relationType.setParentType(parentType);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    break;
+                                case "description":
+                                    if (Objects.nonNull(value)) {
+                                        relationType.setDescription(value.toString());
+                                    }
+                                    break;
+                                case "properties":
+                                    relationType.setProperties(readProperties(value));
+                                    break;
+                                case "operations":
+                                    relationType.setOperations(readOperations(value));
+                                    break;
                             }
                         }
                     }
-                    line = reader.readLine().trim();
-                } else if (line.startsWith("description")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                    relationType.setDescription(value);
-                    line = reader.readLine().trim();
-                } else if (line.startsWith("properties")) {
-                    relationType.setProperties(readProperties());
-                } else if (line.startsWith("operations")) {
-                    relationType.setOperations(readOperations());
                 }
+                relationTypes.add(relationType);
             }
-            relationTypes.add(relationType);
         }
     }
 
-    private void readComponents() throws IOException, InvalidPropertyValueException {
-        line = reader.readLine().trim();
-        while (reader.ready() && !line.startsWith("components")) {
-            line = reader.readLine().trim();
-        }
-        line = reader.readLine().trim();
-        while (line.startsWith("-")) {
-            Component component = new Component();
+    private void readComponents(Object obj) throws IOException, InvalidPropertyValueException {
+        String key, type;
+        Object value;
 
-            String[] split = line.split(":", 2);
-            if (!split[1].isEmpty()) {
-                component.setName(split[1].replaceAll("\\s|\"", ""));
-            } else {
-                component.setName(split[0].replaceFirst("- ", ""));
+        if (obj instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) obj;
+            for (Map<String, Object> map : list) {
+                Component component = new Component();
+
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    key = entry.getKey();
+                    value = entry.getValue();
+                    switch (key) {
+                        case "name":
+                            component.setName(value.toString());
+                            break;
+                        case "type":
+                            if (Objects.nonNull(value)) {
+                                type = value.toString();
+                                if (!type.isEmpty() && !type.equals("-")) {
+                                    for (ComponentType componentType : componentTypes) {
+                                        if (componentType.getName().equals(type)) {
+                                            component.setType(componentType);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            break;
+                        case "description":
+                            if (Objects.nonNull(value)) {
+                                component.setDescription(value.toString());
+                            }
+                            break;
+                        case "properties":
+                            component.setProperties(readProperties(value));
+                            break;
+                        case "operations":
+                            component.setOperations(readOperations(value));
+                            break;
+                        case "artifacts":
+                            component.setArtifacts(readArtifacts(value));
+                            break;
+                        default:
+                            component.setName(key);
+                            if (value instanceof Map) {
+                                Map<String, Object> valueMap = (Map<String, Object>) value;
+                                for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
+                                    key = valueEntry.getKey();
+                                    value = valueEntry.getValue();
+
+                                    switch (key) {
+                                        case "type":
+                                            if (Objects.nonNull(value)) {
+                                                type = value.toString();
+                                                if (!type.isEmpty() && !type.equals("-")) {
+                                                    for (ComponentType componentType : componentTypes) {
+                                                        if (componentType.getName().equals(type)) {
+                                                            component.setType(componentType);
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            break;
+                                        case "description":
+                                            if (Objects.nonNull(value)) {
+                                                component.setDescription(value.toString());
+                                            }
+                                            break;
+                                        case "properties":
+                                            component.setProperties(readProperties(value));
+                                            break;
+                                        case "operations":
+                                            component.setOperations(readOperations(value));
+                                            break;
+                                        case "artifacts":
+                                            component.setArtifacts(readArtifacts(value));
+                                            break;
+                                    }
+                                }
+                            }
+                            break;
+                    }
+                }
+                component.setConfidence(Confidence.CONFIRMED);
+                components.add(component);
             }
+        }
+    }
 
-            line = reader.readLine().trim();
-            while (!line.startsWith("-") && !line.startsWith("relations")) {
-                if (cachedLines.isEmpty()) {
-                    if (line.startsWith("type")) {
-                        String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                        for (ComponentType componentType : componentTypes) {
-                            if (componentType.getName().equals(value)) {
-                                component.setType(componentType);
+    private void readRelations(Object obj) throws IOException, InvalidRelationException, InvalidPropertyValueException {
+        String key, source = "", target, type;
+        Object value;
+
+        if (obj instanceof List) {
+            List<Map<String, Object>> list = (List<Map<String, Object>>) obj;
+            for (Map<String, Object> map : list) {
+                Relation relation = new Relation();
+
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
+                    key = entry.getKey();
+                    value = entry.getValue();
+
+                    relation.setName(key);
+                    if (value instanceof Map) {
+                        Map<String, Object> valueMap = (Map<String, Object>) value;
+                        for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
+                            key = valueEntry.getKey();
+                            value = valueEntry.getValue();
+
+                            switch (key) {
+                                case "type":
+                                    if (Objects.nonNull(value)) {
+                                        type = value.toString();
+                                        if (!type.isEmpty() && !type.equals("-")) {
+                                            for (RelationType relationType : relationTypes) {
+                                                if (relationType.getName().equals(type)) {
+                                                    relation.setType(relationType);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    break;
+                                case "description":
+                                    if (Objects.nonNull(value)) {
+                                        relation.setDescription(value.toString());
+                                    }
+                                    break;
+                                case "source":
+                                    if (Objects.nonNull(value)) {
+                                        source = value.toString();
+                                        if (!source.isEmpty() && !source.equals("-")) {
+                                            for (Component component : components) {
+                                                if (component.getName().equals(source)) {
+                                                    relation.setSource(component);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    break;
+                                case "target":
+                                    if (Objects.nonNull(value)) {
+                                        target = value.toString();
+                                        if (!target.isEmpty() && !target.equals("-")) {
+                                            for (Component component : components) {
+                                                if (component.getName().equals(target)) {
+                                                    relation.setTarget(component);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    break;
+                                case "properties":
+                                    relation.setProperties(readProperties(value));
+                                    break;
+                                case "operations":
+                                    relation.setOperations(readOperations(value));
+                                    break;
                             }
                         }
-                        line = reader.readLine().trim();
-                    } else if (line.startsWith("description")) {
-                        String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                        component.setDescription(value);
-                        line = reader.readLine().trim();
-                    } else if (line.startsWith("properties")) {
-                        component.setProperties(readProperties());
-                    } else if (line.startsWith("operations")) {
-                        component.setOperations(readOperations());
-                    } else if (line.startsWith("artifacts")) {
-                        component.setArtifacts(readArtifacts());
                     }
-                } else {
-                    String value = cachedLines.get(0).split(":")[1].replaceAll("\\s|\"", "");
-                    for (ComponentType componentType : componentTypes) {
-                        if (componentType.getName().equals(value)) {
-                            component.setType(componentType);
-                        }
-                    }
-                    component.setDescription(cachedLines.get(1).split(":")[1].replaceAll("\\s", ""));
-                    cachedLines.clear();
                 }
+                relation.setConfidence(Confidence.CONFIRMED);
+                relations.add(relation);
             }
-            component.setConfidence(Confidence.CONFIRMED);
-            components.add(component);
-        }
-    }
-
-    private void readRelations() throws IOException, InvalidRelationException, InvalidPropertyValueException {
-        line = reader.readLine().trim();
-        while (reader.ready() && !line.startsWith("relations")) {
-            line = reader.readLine().trim();
-        }
-        line = reader.readLine().trim();
-        while (line.startsWith("-")) {
-            Relation relation = new Relation();
-
-            String name = line.split(":", 2)[0].replaceFirst("- ", "");
-            relation.setName(name);
-
-            line = reader.readLine().trim();
-            while (!line.startsWith("-") && !line.startsWith("component_types")) {
-                if (line.startsWith("type")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                    for (RelationType relationType : relationTypes) {
-                        if (relationType.getName().equals(value)) {
-                            relation.setType(relationType);
-                        }
-                    }
-                    line = reader.readLine().trim();
-                } else if (line.startsWith("description")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                    relation.setDescription(value);
-                    line = reader.readLine().trim();
-                } else if (line.startsWith("source")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                    for (Component component : components) {
-                        if (component.getName().equals(value)) {
-                            relation.setSource(component);
-                        }
-                    }
-                    line = reader.readLine().trim();
-                } else if (line.startsWith("target")) {
-                    String value = line.split(":", 2)[1].replaceAll("\\s|\"", "");
-                    for (Component component : components) {
-                        if (component.getName().equals(value)) {
-                            relation.setTarget(component);
-                        }
-                    }
-                    line = reader.readLine().trim();
-                } else if (line.startsWith("properties")) {
-                    relation.setProperties(readProperties());
-                } else if (line.startsWith("operations")) {
-                    relation.setOperations(readOperations());
-                }
-            }
-            relation.setConfidence(Confidence.CONFIRMED);
-            relations.add(relation);
         }
     }
 
     private void parseFile(URL url) throws IOException, InvalidPropertyValueException, InvalidRelationException {
-        reader = new BufferedReader(new InputStreamReader(url.openStream()));
-        readGlobalProperties();
-        readComponentTypes();
-        readRelationTypes();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
+        Map<String, Object> parsedYaml = new Yaml().load(reader);
         reader.close();
-        reader = new BufferedReader(new InputStreamReader(url.openStream()));
-        readComponents();
-        cachedLines.clear();
-        reader.close();
-        reader = new BufferedReader(new InputStreamReader(url.openStream()));
-        readRelations();
-        reader.close();
+
+        properties = readProperties(parsedYaml.get("properties"));
+        readComponentTypes(parsedYaml.get("component_types"));
+        readRelationTypes(parsedYaml.get("relation_types"));
+        readComponents(parsedYaml.get("components"));
+        readRelations(parsedYaml.get("relations"));
     }
 }
