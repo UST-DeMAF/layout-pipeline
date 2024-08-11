@@ -26,6 +26,11 @@ public class AnalysisService {
     private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
     private static final Set<String> supportedFileExtensions = Set.of("yaml", "yml");
 
+    private final List<Component> components = new ArrayList<>();
+    private final List<Relation> relations = new ArrayList<>();
+    private final List<ComponentType> componentTypes = new ArrayList<>();
+    private final List<RelationType> relationTypes = new ArrayList<>();
+
     @Autowired
     ModelsService modelsService;
 
@@ -35,16 +40,17 @@ public class AnalysisService {
     @Autowired
     LayoutService layoutService;
 
+    private List<Property> properties = new ArrayList<>();
     private TechnologyAgnosticDeploymentModel tadm;
-
     private UUID transformationProcessId;
 
-    private List<Property> properties = new ArrayList<>();
-    private List<Component> components = new ArrayList<>();
-    private List<Relation> relations = new ArrayList<>();
-    private List<ComponentType> componentTypes = new ArrayList<>();
-    private List<RelationType> relationTypes = new ArrayList<>();
-
+    /*
+     * Start the analysis process for the given task.
+     * @param taskId the task id
+     * @param transformationProcessId the transformation process id
+     * @param commands the commands
+     * @param locations the locations
+     */
     public void startAnalysis(UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {
         this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
 
@@ -64,6 +70,10 @@ public class AnalysisService {
         analysisTaskResponseSender.sendSuccessResponse(taskId);
     }
 
+    /*
+     * Run the analysis for the given locations.
+     * @param locations the locations
+     */
     private void runAnalysis(List<Location> locations) throws IOException, InvalidAnnotationException, InvalidPropertyValueException, InvalidRelationException {
         for (Location location : locations) {
             String fileExtension = StringUtils.getFilenameExtension(location.getUrl().toString());
@@ -74,6 +84,11 @@ public class AnalysisService {
         this.tadm = new TechnologyAgnosticDeploymentModel(transformationProcessId, properties, components, relations, componentTypes, relationTypes);
     }
 
+    /*
+     * Check if the given string is numeric.
+     * @param str the string
+     * @return true if the string is numeric, false otherwise
+     */
     public boolean isNumeric(String str) {
         try {
             Double.parseDouble(str);
@@ -83,7 +98,12 @@ public class AnalysisService {
         }
     }
 
-    private List<Artifact> readArtifacts(Object obj) throws IOException {
+    /*
+     * Read the artifacts from the given object.
+     * @param obj the object
+     * @return the list of artifacts
+     */
+    private List<Artifact> readArtifacts(Object obj) {
         List<Artifact> artifacts = new ArrayList<>();
         String fileURI, key;
         Object value;
@@ -121,7 +141,12 @@ public class AnalysisService {
         return artifacts;
     }
 
-    private List<Operation> readOperations(Object obj) throws IOException {
+    /*
+     * Read the operations from the given object.
+     * @param obj the object
+     * @return the list of operations
+     */
+    private List<Operation> readOperations(Object obj) {
         List<Operation> operations = new ArrayList<>();
         String key;
         Object value;
@@ -150,8 +175,12 @@ public class AnalysisService {
         return operations;
     }
 
-
-    private List<Property> readProperties(Object obj) throws IOException, InvalidPropertyValueException {
+    /*
+     * Read the properties from the given object.
+     * @param obj the object
+     * @return the list of properties
+     */
+    private List<Property> readProperties(Object obj) throws InvalidPropertyValueException {
         List<Property> properties = new ArrayList<>();
         String key;
         Object value;
@@ -268,7 +297,11 @@ public class AnalysisService {
         return properties;
     }
 
-    private void readComponentTypes(Object obj) throws IOException, InvalidPropertyValueException {
+    /*
+     * Read the component types from the given object.
+     * @param obj the object
+     */
+    private void readComponentTypes(Object obj) throws InvalidPropertyValueException {
         String key, parent;
         Object value;
 
@@ -353,7 +386,11 @@ public class AnalysisService {
         }
     }
 
-    private void readRelationTypes(Object obj) throws IOException, InvalidPropertyValueException {
+    /*
+     * Read the relation types from the given object.
+     * @param obj the object
+     */
+    private void readRelationTypes(Object obj) throws InvalidPropertyValueException {
         String key, parent;
         Object value;
 
@@ -406,7 +443,11 @@ public class AnalysisService {
         }
     }
 
-    private void readComponents(Object obj) throws IOException, InvalidPropertyValueException {
+    /*
+     * Read the components from the given object.
+     * @param obj the object
+     */
+    private void readComponents(Object obj) throws InvalidPropertyValueException {
         String key, type;
         Object value;
 
@@ -497,8 +538,12 @@ public class AnalysisService {
         }
     }
 
-    private void readRelations(Object obj) throws IOException, InvalidRelationException, InvalidPropertyValueException {
-        String key, source = "", target, type;
+    /*
+     * Read the relations from the given object.
+     * @param obj the object
+     */
+    private void readRelations(Object obj) throws InvalidRelationException, InvalidPropertyValueException {
+        String key, source, target, type;
         Object value;
 
         if (obj instanceof List) {
@@ -578,6 +623,10 @@ public class AnalysisService {
         }
     }
 
+    /*
+     * Parse the file from the given URL.
+     * @param url the URL
+     */
     private void parseFile(URL url) throws IOException, InvalidPropertyValueException, InvalidRelationException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
         Map<String, Object> parsedYaml = new Yaml().load(reader);

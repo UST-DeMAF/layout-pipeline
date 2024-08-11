@@ -6,51 +6,32 @@ import org.springframework.stereotype.Service;
 import ust.tad.layoutpipeline.models.tadm.*;
 import ust.tad.layoutpipeline.registration.PluginRegistrationRunner;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
 @Service
 public class LayoutService {
+
     private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
-
-    private List<Component> components;
-    private List<ComponentType> componentTypes;
-    private List<Relation>  relations;
-    private UUID transformationProcessId;
-
-    private String path;
-    private String file;
-
     private Map<String, float[]> layout = new HashMap<>();
 
-    private class Node {
-        String name;
-        String type;
-        float x;
-        float y;
-        String displayName;
-        List<Property> properties;
-        List<Requirement> requirements;
-    }
+    /*
+     * Generates the layout of the components and relations in the TADM.
+     * @param tadm The TechnologyAgnosticDeploymentModel to generate the layout for.
+     */
+    public void generateLayout(TechnologyAgnosticDeploymentModel tadm) {
+        List<Component> components = tadm.getComponents();
+        List<ComponentType> componentTypes = tadm.getComponentTypes();
+        List<Relation> relations = tadm.getRelations();
+        UUID transformationProcessId = tadm.getTransformationProcessId();
 
-    private class Requirement {
-        String type;
-        String node;
-        String relationship;
-        String capability;
-    }
-
-    void generateLayout(TechnologyAgnosticDeploymentModel tadm) {
-        components = tadm.getComponents();
-        componentTypes = tadm.getComponentTypes();
-        relations = tadm.getRelations();
-        transformationProcessId = tadm.getTransformationProcessId();
-
-        path = "/var/repository/graphviz/";
-        file = transformationProcessId.toString() +".dot";
+        String path = "/var/repository/graphviz/";
+        String file = transformationProcessId.toString() + ".dot";
 
         try {
             Files.createDirectories(Paths.get(path));
@@ -65,45 +46,53 @@ public class LayoutService {
         createServiceTemplate(components, relations, transformationProcessId);
     }
 
-    void createDotFile(List<Component> components, List<Relation> relations, String path ) {
+    /*
+     * Creates a .dot file from the components and relations in the TADM.
+     * @param components The components in the TADM.
+     * @param relations The relations in the TADM.
+     * @param path The path to save the .dot file to.
+     */
+    private void createDotFile(List<Component> components, List<Relation> relations, String path) {
         List<String> nodes = new ArrayList<>();
         List<String> graph = new ArrayList<>();
         List<String> subgraph = new ArrayList<>();
 
         for (Component component : components) {
-            nodes.add("\"" + component.getName() + "\" [shape=\"polygon\" width=2.5 height=0.8]" );
+            nodes.add("\"" + component.getName() + "\" [shape=\"polygon\" width=2.5 height=0.8]");
         }
 
-        for (Relation relation: relations) {
+        for (Relation relation : relations) {
             if (relation.getType().getName().equals("HostedOn")) {
-                graph.add("\"" + relation.getSource().getName() + "\" -> \""+ relation.getTarget().getName() + "\" [label=\"HostedOn\"]");
+                graph.add("\"" + relation.getSource().getName() + "\" -> \"" + relation.getTarget().getName() + "\" [label=\"HostedOn\"]");
             } else if (relation.getType().getName().equals("ConnectsTo")) {
-                subgraph.add("\"" + relation.getSource().getName() + "\" -> \""+ relation.getTarget().getName() + "\" [label=\"ConnectsTo\" style=\"dashed\"]");
-            } else {
-
+                subgraph.add("\"" + relation.getSource().getName() + "\" -> \"" + relation.getTarget().getName() + "\" [label=\"ConnectsTo\" style=\"dashed\"]");
             }
         }
 
         try (FileWriter writer = new FileWriter(path)) {
             writer.write("strict digraph {");
-            for (String node : nodes){
+            for (String node : nodes) {
                 writer.write(node);
             }
-            for (String relation : graph){
+            for (String relation : graph) {
                 writer.write(relation);
             }
             writer.write("subgraph {");
-            for (String relation : subgraph){
+            for (String relation : subgraph) {
                 writer.write(relation);
             }
             writer.write("}}");
-            writer.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    Map<String,float[]> callGraphVIZ(String path) {
+    /*
+     * Calls the GraphVIZ tool to generate the layout of the components and relations in the TADM.
+     * @param path The path to the .dot file to generate the layout for.
+     * @return A map of the component names and their coordinates in the layout.
+     */
+    private Map<String, float[]> callGraphVIZ(String path) {
         Map<String, float[]> output = new HashMap<>();
         String command = "dot -Tplain " + path;
 
@@ -122,7 +111,7 @@ public class LayoutService {
                     String[] splits = line.split(" ");
                     String node = splits[1].replaceAll("\"", "");
                     float[] coords = {Float.parseFloat(splits[2]), Float.parseFloat(splits[3])};
-                    maxY = coords[1] > maxY ? coords[1] : maxY;
+                    maxY = Math.max(coords[1], maxY);
                     output.put(node, coords);
                 }
             }
@@ -141,7 +130,12 @@ public class LayoutService {
         return output;
     }
 
-    void createNodeTypes(List<ComponentType> componentTypes, UUID id ) {
+    /*
+     * Creates the node types for the components in the TADM.
+     * @param componentTypes The component types in the TADM.
+     * @param id The ID of the transformation process.
+     */
+    private void createNodeTypes(List<ComponentType> componentTypes, UUID id) {
         for (ComponentType componentType : componentTypes) {
             String nodeTypesPath = "/var/repository/nodetypes/" + id.toString() + ".ust.tad.nodetypes/" + componentType.getName() + "/";
 
@@ -151,13 +145,13 @@ public class LayoutService {
                 throw new RuntimeException(e);
             }
 
-            try (FileWriter writer = new FileWriter(nodeTypesPath + "NodeType.tosca")){
+            try (FileWriter writer = new FileWriter(nodeTypesPath + "NodeType.tosca")) {
                 writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\n");
                 writer.write("node_types:\n");
-                writer.write("  " + id.toString() + ".ust.tad.nodetypes." + componentType.getName() + ":\n");
+                writer.write("  " + id + ".ust.tad.nodetypes." + componentType.getName() + ":\n");
                 writer.write("    derived_from: tosca.nodes.Root\n");
                 writer.write("    metadata:\n");
-                writer.write("      targetNamespace: " + id.toString() + ".ust.tad.nodetypes\n");
+                writer.write("      targetNamespace: " + id + ".ust.tad.nodetypes\n");
                 writer.write("      abstract: \"false\"\n");
                 writer.write("      final: \"false\"\n");
                 writer.write("    properties:\n");
@@ -187,14 +181,19 @@ public class LayoutService {
                 writer.write("            description: The standard configure operation\n");
                 writer.write("          delete:\n");
                 writer.write("            description: The standard delete operation\n");
-                writer.close();
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
     }
 
-    void createServiceTemplate(List<Component> components, List<Relation> relations, UUID id) {
+    /*
+     * Creates the service template for the components and relations in the TADM.
+     * @param components The components in the TADM.
+     * @param relations The relations in the TADM.
+     * @param id The ID of the transformation process.
+     */
+    private void createServiceTemplate(List<Component> components, List<Relation> relations, UUID id) {
         Map<String, Node> nodes = new HashMap<>();
         Map<String, Integer> typeCount = new HashMap<>();
 
@@ -208,7 +207,7 @@ public class LayoutService {
                 LOG.info("Component type of the component " + component.getName() + " is not defined.");
             }
 
-            if(typeCount.containsKey(node.type)) {
+            if (typeCount.containsKey(node.type)) {
                 count = typeCount.get(node.type) + 1;
                 typeCount.replace(node.type, count);
             } else {
@@ -224,9 +223,9 @@ public class LayoutService {
             node.y = coords[1];
 
             List<Requirement> requirements = new ArrayList<>();
-            for(Relation relation : relations) {
+            for (Relation relation : relations) {
                 Requirement requirement = new Requirement();
-                if(relation.getSource().getName().equals(node.displayName)) {
+                if (relation.getSource().getName().equals(node.displayName)) {
                     requirement.type = relation.getType().getName();
                     requirement.node = relation.getTarget().getName(); // Target node displayName
                     requirement.relationship = relation.getName();
@@ -250,12 +249,12 @@ public class LayoutService {
             writer.write("tosca_definitions_version: tosca_simple_yaml_1_3\n\n");
             writer.write("metadata:\n");
             writer.write("  targetNamespace: \"ust.tad.servicetemplates\"\n");
-            writer.write("  name: " + id.toString() + "\n");
+            writer.write("  name: " + id + "\n");
             writer.write("topology_template:\n");
             writer.write("  node_templates:\n");
             for (Node node : nodes.values()) {
                 writer.write("    " + node.name + ":\n");
-                writer.write("      type: " + id.toString() + ".ust.tad.nodetypes." + node.type + "\n");
+                writer.write("      type: " + id + ".ust.tad.nodetypes." + node.type + "\n");
                 writer.write("      metadata:\n");
                 writer.write("        x: '" + node.x + "'\n");
                 writer.write("        y: '" + node.y + "'\n");
@@ -277,16 +276,31 @@ public class LayoutService {
                         writer.write("            capability: " + requirement.capability + "\n");
                     }
                 }
-                //writer.write("\n"); Ist glaube zu viel Check!
             }
             writer.write("  relationship_templates: \n");
             for (Relation relation : relations) {
                 writer.write("    " + relation.getName() + ":\n");
                 writer.write("      type: tosca.relationships." + relation.getType().getName() + "\n");
             }
-            writer.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static class Node {
+        String name;
+        String type;
+        float x;
+        float y;
+        String displayName;
+        List<Property> properties;
+        List<Requirement> requirements;
+    }
+
+    private static class Requirement {
+        String type;
+        String node;
+        String relationship;
+        String capability;
     }
 }
