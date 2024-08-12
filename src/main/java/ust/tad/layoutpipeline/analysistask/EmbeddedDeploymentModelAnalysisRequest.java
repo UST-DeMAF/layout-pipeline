@@ -7,119 +7,136 @@ import java.util.UUID;
 
 public class EmbeddedDeploymentModelAnalysisRequest {
 
-    private UUID parentTaskId;
+  private UUID parentTaskId;
 
-    private UUID transformationProcessId;
+  private UUID transformationProcessId;
 
-    private String technology;
+  private String technology;
 
-    private List<String> commands = new ArrayList<>();
+  private List<String> commands = new ArrayList<>();
 
-    private List<Location> locations = new ArrayList<>();
+  private List<Location> locations = new ArrayList<>();
 
+  public EmbeddedDeploymentModelAnalysisRequest() {}
 
-    public EmbeddedDeploymentModelAnalysisRequest() {
+  public EmbeddedDeploymentModelAnalysisRequest(
+      UUID parentTaskId,
+      UUID transformationProcessId,
+      String technology,
+      List<String> commands,
+      List<Location> locations) {
+    this.parentTaskId = parentTaskId;
+    this.transformationProcessId = transformationProcessId;
+    this.technology = technology;
+    this.commands = commands;
+    this.locations = locations;
+  }
+
+  public UUID getParentTaskId() {
+    return this.parentTaskId;
+  }
+
+  public void setParentTaskId(UUID parentTaskId) {
+    this.parentTaskId = parentTaskId;
+  }
+
+  public UUID getTransformationProcessId() {
+    return this.transformationProcessId;
+  }
+
+  public void setTransformationProcessId(UUID transformationProcessId) {
+    this.transformationProcessId = transformationProcessId;
+  }
+
+  public String getTechnology() {
+    return this.technology;
+  }
+
+  public void setTechnology(String technology) {
+    this.technology = technology;
+  }
+
+  public List<String> getCommands() {
+    return this.commands;
+  }
+
+  public void setCommands(List<String> commands) {
+    this.commands = commands;
+  }
+
+  public List<Location> getLocations() {
+    return this.locations;
+  }
+
+  public void setLocations(List<Location> locations) {
+    this.locations = locations;
+  }
+
+  public EmbeddedDeploymentModelAnalysisRequest parentTaskId(UUID parentTaskId) {
+    setParentTaskId(parentTaskId);
+    return this;
+  }
+
+  public EmbeddedDeploymentModelAnalysisRequest transformationProcessId(
+      UUID transformationProcessId) {
+    setTransformationProcessId(transformationProcessId);
+    return this;
+  }
+
+  public EmbeddedDeploymentModelAnalysisRequest technology(String technology) {
+    setTechnology(technology);
+    return this;
+  }
+
+  public EmbeddedDeploymentModelAnalysisRequest commands(List<String> commands) {
+    setCommands(commands);
+    return this;
+  }
+
+  public EmbeddedDeploymentModelAnalysisRequest locations(List<Location> locations) {
+    setLocations(locations);
+    return this;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof EmbeddedDeploymentModelAnalysisRequest)) {
+      return false;
     }
+    EmbeddedDeploymentModelAnalysisRequest embeddedDeploymentModelAnalysisRequest =
+        (EmbeddedDeploymentModelAnalysisRequest) o;
+    return Objects.equals(parentTaskId, embeddedDeploymentModelAnalysisRequest.parentTaskId)
+        && Objects.equals(
+            transformationProcessId, embeddedDeploymentModelAnalysisRequest.transformationProcessId)
+        && Objects.equals(technology, embeddedDeploymentModelAnalysisRequest.technology)
+        && Objects.equals(commands, embeddedDeploymentModelAnalysisRequest.commands)
+        && Objects.equals(locations, embeddedDeploymentModelAnalysisRequest.locations);
+  }
 
-    public EmbeddedDeploymentModelAnalysisRequest(UUID parentTaskId, UUID transformationProcessId, String technology, List<String> commands, List<Location> locations) {
-        this.parentTaskId = parentTaskId;
-        this.transformationProcessId = transformationProcessId;
-        this.technology = technology;
-        this.commands = commands;
-        this.locations = locations;
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(parentTaskId, transformationProcessId, technology, commands, locations);
+  }
 
-    public UUID getParentTaskId() {
-        return this.parentTaskId;
-    }
-
-    public void setParentTaskId(UUID parentTaskId) {
-        this.parentTaskId = parentTaskId;
-    }
-
-    public UUID getTransformationProcessId() {
-        return this.transformationProcessId;
-    }
-
-    public void setTransformationProcessId(UUID transformationProcessId) {
-        this.transformationProcessId = transformationProcessId;
-    }
-
-    public String getTechnology() {
-        return this.technology;
-    }
-
-    public void setTechnology(String technology) {
-        this.technology = technology;
-    }
-
-    public List<String> getCommands() {
-        return this.commands;
-    }
-
-    public void setCommands(List<String> commands) {
-        this.commands = commands;
-    }
-
-    public List<Location> getLocations() {
-        return this.locations;
-    }
-
-    public void setLocations(List<Location> locations) {
-        this.locations = locations;
-    }
-
-    public EmbeddedDeploymentModelAnalysisRequest parentTaskId(UUID parentTaskId) {
-        setParentTaskId(parentTaskId);
-        return this;
-    }
-
-    public EmbeddedDeploymentModelAnalysisRequest transformationProcessId(UUID transformationProcessId) {
-        setTransformationProcessId(transformationProcessId);
-        return this;
-    }
-
-    public EmbeddedDeploymentModelAnalysisRequest technology(String technology) {
-        setTechnology(technology);
-        return this;
-    }
-
-    public EmbeddedDeploymentModelAnalysisRequest commands(List<String> commands) {
-        setCommands(commands);
-        return this;
-    }
-
-    public EmbeddedDeploymentModelAnalysisRequest locations(List<Location> locations) {
-        setLocations(locations);
-        return this;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == this)
-            return true;
-        if (!(o instanceof EmbeddedDeploymentModelAnalysisRequest)) {
-            return false;
-        }
-        EmbeddedDeploymentModelAnalysisRequest embeddedDeploymentModelAnalysisRequest = (EmbeddedDeploymentModelAnalysisRequest) o;
-        return Objects.equals(parentTaskId, embeddedDeploymentModelAnalysisRequest.parentTaskId) && Objects.equals(transformationProcessId, embeddedDeploymentModelAnalysisRequest.transformationProcessId) && Objects.equals(technology, embeddedDeploymentModelAnalysisRequest.technology) && Objects.equals(commands, embeddedDeploymentModelAnalysisRequest.commands) && Objects.equals(locations, embeddedDeploymentModelAnalysisRequest.locations);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(parentTaskId, transformationProcessId, technology, commands, locations);
-    }
-
-    @Override
-    public String toString() {
-        return "{" +
-                " parentTaskId='" + getParentTaskId() + "'" +
-                ", transformationProcessId='" + getTransformationProcessId() + "'" +
-                ", technology='" + getTechnology() + "'" +
-                ", commands='" + getCommands() + "'" +
-                ", locations='" + getLocations() + "'" +
-                "}";
-    }
-
-
+  @Override
+  public String toString() {
+    return "{"
+        + " parentTaskId='"
+        + getParentTaskId()
+        + "'"
+        + ", transformationProcessId='"
+        + getTransformationProcessId()
+        + "'"
+        + ", technology='"
+        + getTechnology()
+        + "'"
+        + ", commands='"
+        + getCommands()
+        + "'"
+        + ", locations='"
+        + getLocations()
+        + "'"
+        + "}";
+  }
 }
