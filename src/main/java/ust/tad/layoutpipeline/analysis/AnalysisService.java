@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.yaml.snakeyaml.Yaml;
 import ust.tad.layoutpipeline.analysistask.AnalysisTaskResponseSender;
 import ust.tad.layoutpipeline.analysistask.Location;
@@ -56,6 +57,7 @@ public class AnalysisService {
 
         if (!commands.isEmpty() && !locations.isEmpty()) {
             this.transformationProcessId = transformationProcessId;
+
             try {
                 runAnalysis(locations);
             } catch (IOException | InvalidAnnotationException | InvalidPropertyValueException |
@@ -64,9 +66,16 @@ public class AnalysisService {
                 analysisTaskResponseSender.sendFailureResponse(taskId, e.getClass() + ": " + e.getMessage());
                 return;
             }
-            //modelsService.updateTechnologyAgnosticDeploymentModel(this.tadm);
+
+            try {
+                // TODO: Find error for 400 Bad Request when updating the TADM.
+                modelsService.updateTechnologyAgnosticDeploymentModel(tadm);
+            } catch (WebClientResponseException e) {
+                LOG.info("Error when updating the TADM: {}", e.getMessage());
+            }
         }
-        layoutService.generateLayout(this.tadm);
+
+        layoutService.generateLayout(tadm);
         analysisTaskResponseSender.sendSuccessResponse(taskId);
     }
 
