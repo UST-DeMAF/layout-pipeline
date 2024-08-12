@@ -29,8 +29,8 @@ public class ModelsService {
     /**
      * Retrieve a technology-specific deployment model from the model service.
      *
-     * @param transformationProcessId
-     * @return
+     * @param transformationProcessId The ID of the transformation process.
+     * @return The technology-specific deployment model.
      */
     public TechnologySpecificDeploymentModel getTechnologySpecificDeploymentModel(UUID transformationProcessId) {
         LOG.info("Requesting technology-specific deployment model");
@@ -47,7 +47,7 @@ public class ModelsService {
     /**
      * Update a technology-specific deployment model by sending it to the update endpoint of the models service.
      *
-     * @param annotatedDeploymentModel
+     * @param annotatedDeploymentModel The technology-specific deployment model to update.
      */
     public void updateTechnologySpecificDeploymentModel(TechnologySpecificDeploymentModel technologySpecificDeploymentModel) {
         LOG.info("Updating technology-specific deployment model");
@@ -64,8 +64,8 @@ public class ModelsService {
     /**
      * Retrieve a technology-agnostic deployment model from the model service.
      *
-     * @param transformationProcessId
-     * @return
+     * @param transformationProcessId The ID of the transformation process.
+     * @return The technology-agnostic deployment model.
      */
     public TechnologyAgnosticDeploymentModel getTechnologyAgnosticDeploymentModel(UUID transformationProcessId) {
         LOG.info("Requesting technology-agnostic deployment model");
@@ -82,7 +82,7 @@ public class ModelsService {
     /**
      * Update a technology-agnostic deployment model by sending it to the update endpoint of the models service.
      *
-     * @param technologyAgnosticDeploymentModel
+     * @param technologyAgnosticDeploymentModel The technology-agnostic deployment model to update.
      */
     public void updateTechnologyAgnosticDeploymentModel(TechnologyAgnosticDeploymentModel technologyAgnosticDeploymentModel) {
         LOG.info("Updating technology-agnostic deployment model");

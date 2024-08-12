@@ -31,8 +31,7 @@ public class AnalysisTaskReceiver {
      * Receives a message from the analysis task request queue.
      * Based on the type of the message given by the formatIndicator header, it calls a respective function.
      *
-     * @param message
-     * @throws JsonProcessingException
+     * @param message The message received from the analysis task request queue.
      */
     public void receive(Message message) {
         if(message.getMessageProperties().getHeader("formatIndicator") != null) {
@@ -73,6 +72,8 @@ public class AnalysisTaskReceiver {
 
     /**
      * Creates and sends an AnalysisTaskResponse containing an error message.
+     * 
+     * @param errorMessage The error message to be sent.
      */
     private void respondWithErrorMessage(String errorMessage) {
         analysisTaskResponseSender.sendFailureResponse(null, errorMessage);

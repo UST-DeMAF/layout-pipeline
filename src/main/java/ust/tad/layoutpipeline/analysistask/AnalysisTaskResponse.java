@@ -15,6 +15,13 @@ public class AnalysisTaskResponse {
     public AnalysisTaskResponse() {
     }
 
+    /**
+     * Constructor for a successful response.
+     * 
+     * @param taskId The ID of the task.
+     * @param success Whether the task was successful.
+     * @param errorMessage The error message.
+     */
     public AnalysisTaskResponse(UUID taskId, boolean success, String errorMessage) {
         this.taskId = taskId;
         this.success = success;
@@ -64,6 +71,12 @@ public class AnalysisTaskResponse {
         return this;
     }
 
+    /**
+     * Compares this object to another object.
+     * 
+     * @param o The object to compare to.
+     * @return {@code true} if the objects are equal, {@code false} otherwise.
+     */
     @Override
     public boolean equals(Object o) {
         if (o == this)
@@ -75,11 +88,21 @@ public class AnalysisTaskResponse {
         return Objects.equals(taskId, analysisTaskResponse.taskId) && success == analysisTaskResponse.success && Objects.equals(errorMessage, analysisTaskResponse.errorMessage);
     }
 
+    /**
+     * Generates a hash code for this object.
+     * 
+     * @return The hash code.
+     */
     @Override
     public int hashCode() {
         return Objects.hash(taskId, success, errorMessage);
     }
 
+    /**
+     * Generates a string representation of this object.
+     * 
+     * @return The string representation.
+     */
     @Override
     public String toString() {
         return "{" +

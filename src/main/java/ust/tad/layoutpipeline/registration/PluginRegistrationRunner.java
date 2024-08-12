@@ -60,6 +60,12 @@ public class PluginRegistrationRunner implements ApplicationRunner {
     @Value("${messaging.analysistask.response.exchange.name}")
     private String responseExchangeName;
 
+    /**
+     * Register the plugin at the Analysis Manager.
+     * 
+     * @param args The application arguments.
+     * @throws JsonProcessingException If the plugin registration body cannot be created.
+     */
     @Override
     public void run(ApplicationArguments args) throws JsonProcessingException, InterruptedException {
 
@@ -91,7 +97,9 @@ public class PluginRegistrationRunner implements ApplicationRunner {
 
     /**
      * Try to reach the service 20 times (maxAttempts).
-     * @throws InterruptedException
+     * If the service is reachable, the plugin can start connecting.
+     * 
+     * @throws InterruptedException If the thread is interrupted.
      */
     private void connectionAttempt() throws InterruptedException {
         String host = pluginRegistrationURI.split(":")[1].replace("/","");
@@ -108,6 +116,12 @@ public class PluginRegistrationRunner implements ApplicationRunner {
         }
     }
 
+    /**
+     * Create the body for the plugin registration request.
+     * 
+     * @return The body for the plugin registration request.
+     * @throws JsonProcessingException If the body cannot be created.
+     */
     private String createPluginRegistrationBody() throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode plugin = mapper.createObjectNode();
@@ -116,6 +130,13 @@ public class PluginRegistrationRunner implements ApplicationRunner {
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(plugin);
     }
 
+    /**
+     * Create a listener for the request queue.
+     * 
+     * @param requestQueueName The name of the request queue.
+     * @param messageListener The message listener.
+     * @return The listener container.
+     */
     private AbstractMessageListenerContainer createListenerForRequestQueue(String requestQueueName, MessageListener messageListener) {
         SimpleMessageListenerContainer listener = new SimpleMessageListenerContainer(rabbitAdmin.getRabbitTemplate().getConnectionFactory());
         listener.addQueueNames(requestQueueName);
@@ -127,12 +148,13 @@ public class PluginRegistrationRunner implements ApplicationRunner {
 
     /**
      * Checks if Service is reachable. If so, it returns true so the plugin can start connecting otherwise it returns false.
-     * @param hostNameOrIP
-     * @param port
-     * @param timeout
-     * @param attempt
-     * @param maxAttempts
-     * @return boolean
+     * 
+     * @param hostNameOrIP The hostname or IP address of the service.
+     * @param port The port of the service.
+     * @param timeout The timeout in milliseconds.
+     * @param attempt The current attempt.
+     * @param maxAttempts The maximum number of attempts.
+     * @return {@code true} if the service is reachable, {@code false} otherwise.
      */
     public static boolean isServiceReachable(String hostNameOrIP, int port, int timeout, int attempt, int maxAttempts) {
         try (Socket socket = new Socket()) {
