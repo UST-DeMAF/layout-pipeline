@@ -18,6 +18,11 @@ import java.util.*;
 public class LayoutService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
+
+    private List<Component> components = new ArrayList<>();
+    private List<ComponentType> componentTypes = new ArrayList<>();
+    private List<Relation> relations = new ArrayList<>();
+
     private Map<String, float[]> layout = new HashMap<>();
 
     /*
@@ -25,9 +30,9 @@ public class LayoutService {
      * @param tadm The TechnologyAgnosticDeploymentModel to generate the layout for.
      */
     public void generateLayout(TechnologyAgnosticDeploymentModel tadm) {
-        List<Component> components = tadm.getComponents();
-        List<ComponentType> componentTypes = tadm.getComponentTypes();
-        List<Relation> relations = tadm.getRelations();
+        components = tadm.getComponents();
+        componentTypes = tadm.getComponentTypes();
+        relations = tadm.getRelations();
         UUID transformationProcessId = tadm.getTransformationProcessId();
 
         String path = "/var/repository/graphviz/";
@@ -44,6 +49,7 @@ public class LayoutService {
 
         createNodeTypes(componentTypes, transformationProcessId);
         createServiceTemplate(components, relations, transformationProcessId);
+        clearVariables();
     }
 
     /*
@@ -285,6 +291,16 @@ public class LayoutService {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /*
+     * Clears the variables used to generate the layout.
+     */
+    private void clearVariables() {
+        components.clear();
+        componentTypes.clear();
+        relations.clear();
+        layout.clear();
     }
 
     private static class Node {
