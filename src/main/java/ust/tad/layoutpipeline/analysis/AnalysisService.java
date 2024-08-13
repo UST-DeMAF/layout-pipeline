@@ -423,39 +423,70 @@ public class AnalysisService {
           key = entry.getKey();
           value = entry.getValue();
 
-          relationType.setName(key);
-          if (value instanceof Map) {
-            Map<String, Object> valueMap = (Map<String, Object>) value;
-            for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
-              key = valueEntry.getKey();
-              value = valueEntry.getValue();
-              switch (key) {
-                case "extends":
-                  if (Objects.nonNull(value)) {
-                    parent = value.toString();
-                    if (!parent.isEmpty() && !parent.equals("-")) {
-                      for (RelationType parentType : relationTypes) {
-                        if (parentType.getName().equals(value.toString())) {
-                          relationType.setParentType(parentType);
-                          break;
-                        }
-                      }
+          switch (key) {
+            case "name":
+              relationType.setName(value.toString());
+              break;
+            case "extends":
+              if (Objects.nonNull(value)) {
+                parent = value.toString();
+                if (!parent.isEmpty() && !parent.equals("-")) {
+                  for (RelationType parentType : relationTypes) {
+                    if (parentType.getName().equals(parent)) {
+                      relationType.setParentType(parentType);
+                      break;
                     }
                   }
-                  break;
-                case "description":
-                  if (Objects.nonNull(value)) {
-                    relationType.setDescription(value.toString());
-                  }
-                  break;
-                case "properties":
-                  relationType.setProperties(readProperties(value));
-                  break;
-                case "operations":
-                  relationType.setOperations(readOperations(value));
-                  break;
+                }
               }
-            }
+              break;
+            case "description":
+              if (Objects.nonNull(value)) {
+                relationType.setDescription(value.toString());
+              }
+              break;
+            case "properties":
+              relationType.setProperties(readProperties(value));
+              break;
+            case "operations":
+              relationType.setOperations(readOperations(value));
+              break;
+            default:
+              relationType.setName(key);
+              if (value instanceof Map) {
+                Map<String, Object> valueMap = (Map<String, Object>) value;
+                for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
+                  key = valueEntry.getKey();
+                  value = valueEntry.getValue();
+                  switch (key) {
+                    case "extends":
+                      if (Objects.nonNull(value)) {
+                        parent = value.toString();
+                        if (!parent.isEmpty() && !parent.equals("-")) {
+                          for (RelationType parentType : relationTypes) {
+                            if (parentType.getName().equals(parent)) {
+                              relationType.setParentType(parentType);
+                              break;
+                            }
+                          }
+                        }
+                      }
+                      break;
+                    case "description":
+                      if (Objects.nonNull(value)) {
+                        relationType.setDescription(value.toString());
+                      }
+                      break;
+                    case "properties":
+                      relationType.setProperties(readProperties(value));
+                      break;
+                    case "operations":
+                      relationType.setOperations(readOperations(value));
+                      break;
+                  }
+                }
+              }
+              break;
           }
         }
         relationTypes.add(relationType);
@@ -563,7 +594,7 @@ public class AnalysisService {
    * @param obj the object
    */
   private void readRelations(Object obj)
-      throws InvalidRelationException, InvalidPropertyValueException {
+          throws InvalidRelationException, InvalidPropertyValueException {
     String key, source, target, type;
     Object value;
 
@@ -575,67 +606,123 @@ public class AnalysisService {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
           key = entry.getKey();
           value = entry.getValue();
-
-          relation.setName(key);
-          if (value instanceof Map) {
-            Map<String, Object> valueMap = (Map<String, Object>) value;
-            for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
-              key = valueEntry.getKey();
-              value = valueEntry.getValue();
-
-              switch (key) {
-                case "type":
-                  if (Objects.nonNull(value)) {
-                    type = value.toString();
-                    if (!type.isEmpty() && !type.equals("-")) {
-                      for (RelationType relationType : relationTypes) {
-                        if (relationType.getName().equals(type)) {
-                          relation.setType(relationType);
-                          break;
-                        }
-                      }
+          switch (key) {
+            case "name":
+              relation.setName(value.toString());
+              break;
+            case "type":
+              if (Objects.nonNull(value)) {
+                type = value.toString();
+                if (!type.isEmpty() && !type.equals("-")) {
+                  for (RelationType relationType : relationTypes) {
+                    if (relationType.getName().equals(type)) {
+                      relation.setType(relationType);
+                      break;
                     }
                   }
-                  break;
-                case "description":
-                  if (Objects.nonNull(value)) {
-                    relation.setDescription(value.toString());
-                  }
-                  break;
-                case "source":
-                  if (Objects.nonNull(value)) {
-                    source = value.toString();
-                    if (!source.isEmpty() && !source.equals("-")) {
-                      for (Component component : components) {
-                        if (component.getName().equals(source)) {
-                          relation.setSource(component);
-                          break;
-                        }
-                      }
-                    }
-                  }
-                  break;
-                case "target":
-                  if (Objects.nonNull(value)) {
-                    target = value.toString();
-                    if (!target.isEmpty() && !target.equals("-")) {
-                      for (Component component : components) {
-                        if (component.getName().equals(target)) {
-                          relation.setTarget(component);
-                          break;
-                        }
-                      }
-                    }
-                  }
-                  break;
-                case "properties":
-                  relation.setProperties(readProperties(value));
-                  break;
-                case "operations":
-                  relation.setOperations(readOperations(value));
-                  break;
+                }
               }
-            }
+              break;
+            case "description":
+              if (Objects.nonNull(value)) {
+                relation.setDescription(value.toString());
+              }
+              break;
+            case "source":
+              if (Objects.nonNull(value)) {
+                source = value.toString();
+                if (!source.isEmpty() && !source.equals("-")) {
+                  for (Component component : components) {
+                    if (component.getName().equals(source)) {
+                      relation.setSource(component);
+                      break;
+                    }
+                  }
+                }
+              }
+              break;
+            case "target":
+              if (Objects.nonNull(value)) {
+                target = value.toString();
+                if (!target.isEmpty() && !target.equals("-")) {
+                  for (Component component : components) {
+                    if (component.getName().equals(target)) {
+                      relation.setTarget(component);
+                      break;
+                    }
+                  }
+                }
+              }
+              break;
+            case "properties":
+              relation.setProperties(readProperties(value));
+              break;
+            case "operations":
+              relation.setOperations(readOperations(value));
+              break;
+            default:
+              relation.setName(key);
+              if (value instanceof Map) {
+                Map<String, Object> valueMap = (Map<String, Object>) value;
+                for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
+                  key = valueEntry.getKey();
+                  value = valueEntry.getValue();
+
+                  switch (key) {
+                    case "type":
+                      if (Objects.nonNull(value)) {
+                        type = value.toString();
+                        if (!type.isEmpty() && !type.equals("-")) {
+                          for (RelationType relationType : relationTypes) {
+                            if (relationType.getName().equals(type)) {
+                              relation.setType(relationType);
+                              break;
+                            }
+                          }
+                        }
+                      }
+                      break;
+                    case "description":
+                      if (Objects.nonNull(value)) {
+                        relation.setDescription(value.toString());
+                      }
+                      break;
+                    case "source":
+                      if (Objects.nonNull(value)) {
+                        source = value.toString();
+                        if (!source.isEmpty() && !source.equals("-")) {
+                          for (Component component : components) {
+                            if (component.getName().equals(source)) {
+                              relation.setSource(component);
+                              break;
+                            }
+                          }
+                        }
+                      }
+                      break;
+                    case "target":
+                      if (Objects.nonNull(value)) {
+                        target = value.toString();
+                        if (!target.isEmpty() && !target.equals("-")) {
+                          for (Component component : components) {
+                            if (component.getName().equals(target)) {
+                              relation.setTarget(component);
+                              break;
+                            }
+                          }
+                        }
+                      }
+                      break;
+                    case "properties":
+                      relation.setProperties(readProperties(value));
+                      break;
+                    case "operations":
+                      relation.setOperations(readOperations(value));
+                      break;
+                  }
+                }
+              }
+              break;
           }
         }
         relation.setConfidence(Confidence.CONFIRMED);
