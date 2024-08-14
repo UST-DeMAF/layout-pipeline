@@ -276,7 +276,11 @@ public class LayoutService {
       writer.write("  node_templates:\n");
       for (Node node : nodes.values()) {
         writer.write("    " + node.name + ":\n");
-        writer.write("      type: " + id + ".ust.tad.nodetypes." + node.type + "\n");
+        if (node.type == null) {
+            writer.write("      type: tosca.nodes.Root\n");
+        } else {
+            writer.write("      type: " + id + ".ust.tad.nodetypes." + node.type + "\n");
+        }
         writer.write("      metadata:\n");
         writer.write("        x: '" + node.x + "'\n");
         writer.write("        y: '" + node.y + "'\n");
