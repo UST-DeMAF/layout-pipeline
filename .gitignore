@@ -35,3 +35,4 @@ target/
 !/winery/nodetypes/tosca.nodes.Storage/
 /winery/servicetemplates/**
 !/winery/servicetemplates/.gitkeep
+/.vscode/

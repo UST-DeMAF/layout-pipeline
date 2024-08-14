@@ -594,7 +594,7 @@ public class AnalysisService {
    * @param obj the object
    */
   private void readRelations(Object obj)
-          throws InvalidRelationException, InvalidPropertyValueException {
+      throws InvalidRelationException, InvalidPropertyValueException {
     String key, source, target, type;
     Object value;
 

@@ -277,9 +277,9 @@ public class LayoutService {
       for (Node node : nodes.values()) {
         writer.write("    " + node.name + ":\n");
         if (node.type == null) {
-            writer.write("      type: tosca.nodes.Root\n");
+          writer.write("      type: tosca.nodes.Root\n");
         } else {
-            writer.write("      type: " + id + ".ust.tad.nodetypes." + node.type + "\n");
+          writer.write("      type: " + id + ".ust.tad.nodetypes." + node.type + "\n");
         }
         writer.write("      metadata:\n");
         writer.write("        x: '" + node.x + "'\n");
