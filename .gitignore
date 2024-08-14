@@ -1,2 +1,38 @@
-.idea/
+# Compiled class file
+*.class
+
+# Log file
+*.log
+*.log.*.gz
+*.log.*.tmp
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+# Package Files #
+*.jar
+
 target/
+
+/rabbitmq
+
+/volume/**
+!/volume/helmTemplates/
+/volume/helmTemplates/**
+!/volume/helmTemplates/README.md
+!/volume/tadms/
+/volume/tadms/**
+!/volume/tadms/README.md
+
+/winery/graphviz/**
+/winery/nodetypes/*
+!/winery/nodetypes/tosca.nodes/
+!/winery/nodetypes/tosca.nodes.Abstract/
+!/winery/nodetypes/tosca.nodes.Container/
+!/winery/nodetypes/tosca.nodes.Storage/
+/winery/servicetemplates/**
+!/winery/servicetemplates/.gitkeep
+/.vscode/

@@ -6,7 +6,7 @@ RUN apt-get update \
     && apt-get autoremove -y \
     && apt-get autoclean -y
 
-RUN mkdir -p /app/target/data
+RUN mkdir -p /app/target
 WORKDIR /app
 
 COPY pom.xml .
