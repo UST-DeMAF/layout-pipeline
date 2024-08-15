@@ -112,7 +112,8 @@ services:
     ports:
       - 8080:8080
     healthcheck:
-      test: ["CMD-SHELL", "cat", "analysis-manager.log | grep 'Started AnalysisManagerApplication' || exit 1"]
+      # FIXME: this still uses `cat` which results in being healthy for as long as "Started AnalysisManagerApplication" is in the log
+      test: ["CMD-SHELL", "cat analysis-manager.log | grep 'Started AnalysisManagerApplication' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -123,6 +124,8 @@ services:
     container_name: modelsservice
     depends_on:
       modelsdatabase:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     restart: always
     environment:
@@ -137,7 +140,8 @@ services:
     ports:
       - 8081:8081
     healthcheck:
-      test: ["CMD-SHELL", "cat", "models-service.log | grep 'Started ModelsServiceApplication' || exit 1"]
+      # FIXME: this still uses `cat` which results in being healthy for as long as "Started AnalysisManagerApplication" is in the log
+      test: ["CMD-SHELL", "cat models-service.log | grep 'Started ModelsServiceApplication' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -170,6 +174,8 @@ services:
     depends_on:
       analysismanager:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       ANALYSIS_MANAGER_PLUGIN_REGISTRATION_URL: http://analysismanager:8080/plugin-registration
       MODELS_SERVICE_URL: http://modelsservice:8081
@@ -182,7 +188,7 @@ services:
       - 8082:8082
       - 5005:5005
     healthcheck:
-      test: ["CMD-SHELL", "cat", "layout-pipeline.log | grep 'Started LayoutPipelineApplication' || exit 1"]
+      test: ["CMD-SHELL", "curl -fs http://localhost:8082/actuator/health | grep 'UP' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
