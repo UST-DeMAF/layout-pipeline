@@ -11,6 +11,8 @@ volumes:
       type: 'none'
       o: 'bind'
       device: ./winery
+  rabbitmq_data:
+  rabbitmq_logs:
 
 services:
   # Message Broker
@@ -21,8 +23,8 @@ services:
     volumes:
       #  - ./rabbitmq/etc/definitions.json:/etc/rabbitmq/definitions.json
       #  - ./rabbitmq/etc/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-      - ./rabbitmq/data:/var/lib/rabbitmq/
-      - ./rabbitmq/logs:/var/log/rabbitmq
+      - rabbitmq_data:/var/lib/rabbitmq/
+      - rabbitmq_logs:/var/log/rabbitmq
     ports:
       - 5672:5672
       - 15672:15672
