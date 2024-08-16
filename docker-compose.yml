@@ -164,16 +164,18 @@ services:
 
   # Plugins
   layout-pipeline:
+    hostname: layout-pipeline
     container_name: layout-pipeline
+    image: layout-pipeline:latest
     build:
       context: .
       dockerfile: Dockerfile
-    image: layout-pipeline:latest
     depends_on:
       analysismanager:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    restart: always
     environment:
       ANALYSIS_MANAGER_PLUGIN_REGISTRATION_URL: http://analysismanager:8080/plugin-registration
       MODELS_SERVICE_URL: http://modelsservice:8081
