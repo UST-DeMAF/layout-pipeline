@@ -105,20 +105,6 @@ public class AnalysisService {
   }
 
   /*
-   * Check if the given string is numeric.
-   * @param str the string
-   * @return true if the string is numeric, false otherwise
-   */
-  public boolean isNumeric(String str) {
-    try {
-      Double.parseDouble(str);
-      return true;
-    } catch (NullPointerException | NumberFormatException e) {
-      return false;
-    }
-  }
-
-  /*
    * Read the artifacts from the given object.
    * @param obj the object
    * @return the list of artifacts
@@ -246,12 +232,7 @@ public class AnalysisService {
               property.setRequired(Boolean.parseBoolean(value.toString()));
               break;
             default:
-              if (isNumeric(key)) {
-                property.setKey("\"" + key + "\"");
-              } else {
-                property.setKey(key);
-              }
-
+              property.setKey(key);
               if (value instanceof Map) {
                 Map<String, Object> valueMap = (Map<String, Object>) value;
                 for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {
