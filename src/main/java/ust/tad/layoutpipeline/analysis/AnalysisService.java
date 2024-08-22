@@ -52,7 +52,7 @@ public class AnalysisService {
       UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {
     this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
 
-    if (!commands.isEmpty() && !locations.isEmpty()) {
+    if (!locations.isEmpty()) {
       this.transformationProcessId = transformationProcessId;
 
       try {
