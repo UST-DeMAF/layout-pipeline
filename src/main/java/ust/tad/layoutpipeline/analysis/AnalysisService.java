@@ -50,11 +50,8 @@ public class AnalysisService {
    */
   public void startAnalysis(
       UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {
-    this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
-
     if (!locations.isEmpty()) {
       this.transformationProcessId = transformationProcessId;
-
       try {
         runAnalysis(locations);
       } catch (IOException
@@ -66,13 +63,8 @@ public class AnalysisService {
             taskId, e.getClass() + ": " + e.getMessage());
         return;
       }
-
-      try {
-        // TODO: Find error for 400 Bad Request when updating the TADM.
-        modelsService.updateTechnologyAgnosticDeploymentModel(tadm);
-      } catch (WebClientResponseException e) {
-        LOG.info("Error when updating the TADM: {}", e.getMessage());
-      }
+    } else {
+      this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
     }
 
     layoutService.generateLayout(tadm);
