@@ -11,28 +11,35 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import ust.tad.layoutpipeline.models.tadm.*;
-import ust.tad.layoutpipeline.registration.PluginRegistrationRunner;
 
 @Service
 public class LayoutService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
+  private static final Logger LOG = LoggerFactory.getLogger(LayoutService.class);
 
   private List<Component> components = new ArrayList<>();
   private List<ComponentType> componentTypes = new ArrayList<>();
   private List<Relation> relations = new ArrayList<>();
 
-  private Map<String, float[]> layout = new HashMap<>();
+  private final Map<String, int[]> layout = new HashMap<>();
+
+  private double dpi;
+  private double width;
+  private double height;
 
   /*
    * Generates the layout of the components and relations in the TADM.
    * @param tadm The TechnologyAgnosticDeploymentModel to generate the layout for.
    */
-  public void generateLayout(TechnologyAgnosticDeploymentModel tadm) {
+  public void generateLayout(TechnologyAgnosticDeploymentModel tadm, double dpi, int width, int height) {
     components = tadm.getComponents();
     componentTypes = tadm.getComponentTypes();
     relations = tadm.getRelations();
     UUID transformationProcessId = tadm.getTransformationProcessId();
+
+    this.dpi = dpi;
+    this.width = convertPixelsToInches(width);
+    this.height = convertPixelsToInches(height);
 
     String path = "/var/repository/graphviz/";
     String file = transformationProcessId.toString() + ".dot";
@@ -44,7 +51,7 @@ public class LayoutService {
     }
 
     createDotFile(components, relations, path + file);
-    layout = callGraphVIZ(path + file);
+    callGraphVIZ(path + file);
 
     createNodeTypes(componentTypes, transformationProcessId);
     createServiceTemplate(components, relations, transformationProcessId);
@@ -63,40 +70,44 @@ public class LayoutService {
     List<String> subgraph = new ArrayList<>();
 
     for (Component component : components) {
-      nodes.add("\"" + component.getName() + "\" [shape=\"polygon\" width=2.5 height=0.8]");
+      nodes.add("    \"" + component.getName() + "\"\n");
     }
 
     for (Relation relation : relations) {
       if (relation.getType().getName().equals("HostedOn")) {
         graph.add(
-            "\""
+            "    \""
                 + relation.getSource().getName()
                 + "\" -> \""
                 + relation.getTarget().getName()
-                + "\" [label=\"HostedOn\"]");
+                + "\"\n");
       } else if (relation.getType().getName().equals("ConnectsTo")) {
         subgraph.add(
-            "\""
+            "        \""
                 + relation.getSource().getName()
                 + "\" -> \""
                 + relation.getTarget().getName()
-                + "\" [label=\"ConnectsTo\" style=\"dashed\"]");
+                + "\"\n");
       }
     }
 
     try (FileWriter writer = new FileWriter(path)) {
-      writer.write("strict digraph {");
+      writer.write("strict digraph {\n");
+      writer.write("    graph [dpi=" + dpi + ", ratio=\"compress\", size=\"" + width + "," + height + "\", splines=\"ortho\"]\n");
+      writer.write("    node [shape=\"polygon\",  width=2.5, height=0.8]\n");
+      writer.write("    edge [label=\"HostedOn\", style=\"solid\"]\n");
       for (String node : nodes) {
         writer.write(node);
       }
       for (String relation : graph) {
         writer.write(relation);
       }
-      writer.write("subgraph {");
+      writer.write("    subgraph {\n");
+      writer.write("        edge [label=\"ConnectsTo\", style=\"dashed\"]\n");
       for (String relation : subgraph) {
         writer.write(relation);
       }
-      writer.write("}}");
+      writer.write("    }\n}");
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -107,8 +118,8 @@ public class LayoutService {
    * @param path The path to the .dot file to generate the layout for.
    * @return A map of the component names and their coordinates in the layout.
    */
-  private Map<String, float[]> callGraphVIZ(String path) {
-    Map<String, float[]> output = new HashMap<>();
+  private void callGraphVIZ(String path) {
+    Map<String, double[]> output = new HashMap<>();
     String command = "dot -Tplain " + path;
 
     ProcessBuilder processBuilder = new ProcessBuilder();
@@ -118,31 +129,29 @@ public class LayoutService {
       Process process = processBuilder.start();
       BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-      float maxY = 0;
+      double maxY = 0;
       String line;
 
       while ((line = reader.readLine()) != null) {
         if (line.startsWith("node")) {
           String[] splits = line.split(" ");
           String node = splits[1].replaceAll("\"", "");
-          float[] coords = {Float.parseFloat(splits[2]), Float.parseFloat(splits[3])};
+          double[] coords = {Double.parseDouble(splits[2]), Double.parseDouble(splits[3])};
           maxY = Math.max(coords[1], maxY);
           output.put(node, coords);
         }
       }
 
-      for (Map.Entry<String, float[]> entry : output.entrySet()) {
-        float[] coords = entry.getValue();
-        coords[0] = Math.round(coords[0] * 100);
-        coords[1] = Math.round(Math.abs(coords[1] - maxY) * 100 + 100);
-        entry.setValue(coords);
+      for (Map.Entry<String, double[]> entry : output.entrySet()) {
+        String node = entry.getKey();
+        double[] coords = entry.getValue();
+        int x = convertInchesToPixels(coords[0]);
+        int y = convertInchesToPixels(Math.abs(coords[1] - maxY)) + 100;
+        layout.put(node, new int[]{x, y});
       }
-
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-
-    return output;
   }
 
   /*
@@ -230,7 +239,7 @@ public class LayoutService {
       try {
         node.type = component.getType().getName();
       } catch (Exception e) {
-        LOG.info("Component type of the component " + component.getName() + " is not defined.");
+          LOG.info("Component type of the component {} is not defined.", component.getName());
       }
 
       if (typeCount.containsKey(node.type)) {
@@ -244,7 +253,7 @@ public class LayoutService {
       node.name = component.getName() + "_" + count;
       node.properties = component.getProperties();
 
-      float[] coords = layout.get(node.displayName);
+      int[] coords = layout.get(node.displayName);
       node.x = coords[0];
       node.y = coords[1];
 
@@ -334,6 +343,24 @@ public class LayoutService {
   }
 
   /*
+  * Converts inches to pixels.
+  * @param inches the inches
+  * @return the pixels
+  */
+  private int convertInchesToPixels(double inches) {
+    return (int) Math.round(inches * dpi);
+  }
+
+  /*
+  * Converts pixels to inches.
+  * @param pixels the pixels
+  * @return the inches
+  */
+  private double convertPixelsToInches(double pixels) {
+    return pixels / dpi;
+  }
+
+  /*
    * Check if the given string is numeric.
    * @param str the string
    * @return true if the string is numeric, false otherwise
@@ -350,8 +377,8 @@ public class LayoutService {
   private static class Node {
     String name;
     String type;
-    float x;
-    float y;
+    int x;
+    int y;
     String displayName;
     List<Property> properties;
     List<Requirement> requirements;
