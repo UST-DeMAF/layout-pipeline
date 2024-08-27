@@ -68,7 +68,7 @@ services:
 
   # Core Services
   analysismanager:
-    image: well5a/analysis-manager:latest
+    image: well5a/analysis-manager:testing
     hostname: analysismanager
     container_name: analysismanager
     depends_on:

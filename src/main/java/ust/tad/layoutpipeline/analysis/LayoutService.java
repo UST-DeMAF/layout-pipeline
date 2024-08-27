@@ -24,22 +24,24 @@ public class LayoutService {
   private final Map<String, int[]> layout = new HashMap<>();
 
   private double dpi;
-  private double width;
-  private double height;
+  private String flatten;
+  private double[] graphSize;
+  private double[] nodeSize;
 
   /*
    * Generates the layout of the components and relations in the TADM.
    * @param tadm The TechnologyAgnosticDeploymentModel to generate the layout for.
    */
-  public void generateLayout(TechnologyAgnosticDeploymentModel tadm, double dpi, int width, int height) {
+  public void generateLayout(TechnologyAgnosticDeploymentModel tadm, double dpi, String flatten, int width, int height) {
     components = tadm.getComponents();
     componentTypes = tadm.getComponentTypes();
     relations = tadm.getRelations();
     UUID transformationProcessId = tadm.getTransformationProcessId();
 
     this.dpi = dpi;
-    this.width = convertPixelsToInches(width);
-    this.height = convertPixelsToInches(height);
+    this.flatten = flatten;
+    graphSize = new double[]{convertPixelsToInches(width * 0.82), convertPixelsToInches(height * 0.79)};
+    nodeSize = new double[]{convertPixelsToInches(225), convertPixelsToInches(60)};
 
     String path = "/var/repository/graphviz/";
     String file = transformationProcessId.toString() + ".dot";
@@ -66,46 +68,88 @@ public class LayoutService {
    */
   private void createDotFile(List<Component> components, List<Relation> relations, String path) {
     List<String> nodes = new ArrayList<>();
-    List<String> graph = new ArrayList<>();
-    List<String> subgraph = new ArrayList<>();
+    List<String> rankSame = new ArrayList<>();
+
+    Map<String, List<String>> graph = new HashMap<>();
+    Map<String, List<String>> subgraph = new HashMap<>();
 
     for (Component component : components) {
       nodes.add("    \"" + component.getName() + "\"\n");
     }
 
     for (Relation relation : relations) {
-      if (relation.getType().getName().equals("HostedOn")) {
-        graph.add(
-            "    \""
-                + relation.getSource().getName()
-                + "\" -> \""
-                + relation.getTarget().getName()
-                + "\"\n");
-      } else if (relation.getType().getName().equals("ConnectsTo")) {
-        subgraph.add(
-            "        \""
-                + relation.getSource().getName()
-                + "\" -> \""
-                + relation.getTarget().getName()
-                + "\"\n");
+      String relationType = relation.getType().getName();
+      String source = relation.getSource().getName();
+      String target = relation.getTarget().getName();
+
+      if (relationType.equals("HostedOn")) {
+        if (graph.containsKey(source)) {
+          graph.get(source).add(target);
+        } else {
+          List<String> targets = new ArrayList<>();
+          targets.add(target);
+          graph.put(source, targets);
+        }
+      } else if (relationType.equals("ConnectsTo")) {
+        if (subgraph.containsKey(source)) {
+          subgraph.get(source).add(target);
+          if (!rankSame.contains(source)) {
+            rankSame.add(source);
+          }
+        } else {
+          List<String> targets = new ArrayList<>();
+          targets.add(target);
+          subgraph.put(source, targets);
+        }
       }
     }
 
     try (FileWriter writer = new FileWriter(path)) {
       writer.write("strict digraph {\n");
-      writer.write("    graph [dpi=" + dpi + ", ratio=\"compress\", size=\"" + width + "," + height + "\", splines=\"ortho\"]\n");
-      writer.write("    node [shape=\"polygon\",  width=2.5, height=0.8]\n");
+      if (flatten.equals("true")) {
+        writer.write("    graph [dpi=" + dpi + ", rank=\"same\", ratio=\"compress\", size=\"" + graphSize[0] + "," + graphSize[1] + "\", splines=\"ortho\"]\n");
+      } else {
+        writer.write("    graph [dpi=" + dpi + ", ratio=\"compress\", size=\"" + graphSize[0] + "," + graphSize[1] + "\", splines=\"ortho\"]\n");
+      }
+      writer.write("    node [fixedsize=\"true\", shape=\"polygon\",  width=" + nodeSize[0] +", height=" + nodeSize[1] + "]\n");
       writer.write("    edge [label=\"HostedOn\", style=\"solid\"]\n");
       for (String node : nodes) {
         writer.write(node);
       }
-      for (String relation : graph) {
-        writer.write(relation);
+      for (Map.Entry<String, List<String>> entry : graph.entrySet()) {
+        String source = entry.getKey();
+        List<String> targets = entry.getValue();
+        if (targets.size() > 1) {
+          writer.write("    \"" + source + "\" -> { ");
+          for (String target : targets) {
+            writer.write("\"" + target + "\" ");
+          }
+          writer.write("} [weight=2]\n");
+        } else {
+          writer.write("    \"" + source + "\" -> \"" + targets.get(0) + "\"\n");
+        }
       }
       writer.write("    subgraph {\n");
       writer.write("        edge [label=\"ConnectsTo\", style=\"dashed\"]\n");
-      for (String relation : subgraph) {
-        writer.write(relation);
+      if (flatten.equals("partial")) {
+        writer.write("        { rank=\"same\" ");
+        for (String node : rankSame) {
+          writer.write("\"" + node + "\" ");
+        }
+        writer.write("}\n");
+      }
+      for (Map.Entry<String, List<String>> entry : subgraph.entrySet()) {
+        String source = entry.getKey();
+        List<String> targets = entry.getValue();
+        if (targets.size() > 1) {
+          writer.write("        \"" + source + "\" -> { ");
+          for (String target : targets) {
+            writer.write("\"" + target + "\" ");
+          }
+          writer.write("} [weight=2]\n");
+        } else {
+          writer.write("        \"" + source + "\" -> \"" + targets.get(0) + "\"\n");
+        }
       }
       writer.write("    }\n}");
     } catch (IOException e) {

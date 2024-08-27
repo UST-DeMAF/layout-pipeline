@@ -40,6 +40,7 @@ public class AnalysisService {
   private UUID transformationProcessId;
 
   private double dpi = 96.0;
+  private String flatten = "false";
   private int width = 1920;
   private int height = 1080;
 
@@ -72,6 +73,8 @@ public class AnalysisService {
     for (String command : commands) {
       if (command.contains("dpi")) {
         dpi = Double.parseDouble(command.split("dpi=")[1]);
+      } else if (command.contains("flatten")) {
+        flatten = command.split("flatten=")[1];
       } else if (command.contains("width")) {
         width = Integer.parseInt(command.split("width=")[1]);
       } else if (command.contains("height")) {
@@ -79,7 +82,7 @@ public class AnalysisService {
       }
     }
 
-    layoutService.generateLayout(tadm, dpi, width, height);
+    layoutService.generateLayout(tadm, dpi, flatten, width, height);
     analysisTaskResponseSender.sendSuccessResponse(taskId);
   }
 
