@@ -50,11 +50,8 @@ public class AnalysisService {
    */
   public void startAnalysis(
       UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {
-    this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
-
-    if (!commands.isEmpty() && !locations.isEmpty()) {
+    if (!locations.isEmpty()) {
       this.transformationProcessId = transformationProcessId;
-
       try {
         runAnalysis(locations);
       } catch (IOException
@@ -66,13 +63,8 @@ public class AnalysisService {
             taskId, e.getClass() + ": " + e.getMessage());
         return;
       }
-
-      try {
-        // TODO: Find error for 400 Bad Request when updating the TADM.
-        modelsService.updateTechnologyAgnosticDeploymentModel(tadm);
-      } catch (WebClientResponseException e) {
-        LOG.info("Error when updating the TADM: {}", e.getMessage());
-      }
+    } else {
+      this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
     }
 
     layoutService.generateLayout(tadm);
@@ -102,20 +94,6 @@ public class AnalysisService {
             relations,
             componentTypes,
             relationTypes);
-  }
-
-  /*
-   * Check if the given string is numeric.
-   * @param str the string
-   * @return true if the string is numeric, false otherwise
-   */
-  public boolean isNumeric(String str) {
-    try {
-      Double.parseDouble(str);
-      return true;
-    } catch (NullPointerException | NumberFormatException e) {
-      return false;
-    }
   }
 
   /*
@@ -246,12 +224,7 @@ public class AnalysisService {
               property.setRequired(Boolean.parseBoolean(value.toString()));
               break;
             default:
-              if (isNumeric(key)) {
-                property.setKey("\"" + key + "\"");
-              } else {
-                property.setKey(key);
-              }
-
+              property.setKey(key);
               if (value instanceof Map) {
                 Map<String, Object> valueMap = (Map<String, Object>) value;
                 for (Map.Entry<String, Object> valueEntry : valueMap.entrySet()) {

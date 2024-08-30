@@ -177,7 +177,12 @@ public class LayoutService {
         writer.write("    properties:\n");
         List<Property> properties = componentType.getProperties();
         for (Property property : properties) {
-          writer.write("      " + property.getKey() + ":\n");
+          String key = property.getKey();
+          if (isNumeric(key)) {
+            writer.write("      \"" + key + "\":\n");
+          } else {
+            writer.write("      " + key + ":\n");
+          }
           writer.write("        type: " + property.getType().name() + "\n");
           writer.write("        required: " + property.getRequired() + "\n");
           writer.write("        default: " + property.getValue().toString() + "\n");
@@ -287,7 +292,12 @@ public class LayoutService {
         writer.write("        displayName: " + node.displayName + "\n");
         writer.write("      properties:\n");
         for (Property property : node.properties) {
-          writer.write("        " + property.getKey() + ": " + property.getValue() + "\n");
+          String key = property.getKey();
+          if (isNumeric(key)) {
+            writer.write("        \"" + key + "\": " + property.getValue() + "\n");
+          } else {
+            writer.write("        " + key + ": " + property.getValue() + "\n");
+          }
         }
         if (!node.requirements.isEmpty()) {
           writer.write("      requirements:\n");
@@ -321,6 +331,20 @@ public class LayoutService {
     componentTypes.clear();
     relations.clear();
     layout.clear();
+  }
+
+  /*
+   * Check if the given string is numeric.
+   * @param str the string
+   * @return true if the string is numeric, false otherwise
+   */
+  public boolean isNumeric(String str) {
+    try {
+      Double.parseDouble(str);
+      return true;
+    } catch (NullPointerException | NumberFormatException e) {
+      return false;
+    }
   }
 
   private static class Node {
