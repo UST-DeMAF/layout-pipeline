@@ -23,12 +23,10 @@ public class WebClientConfig {
   @Bean
   public WebClient modelsServiceApiClient() {
     final int size = 16 * 1024 * 1024;
-    final ExchangeStrategies strategies = ExchangeStrategies.builder()
+    final ExchangeStrategies strategies =
+        ExchangeStrategies.builder()
             .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(size))
             .build();
-    return WebClient.builder()
-            .exchangeStrategies(strategies)
-            .baseUrl(modelsServiceURL)
-            .build();
+    return WebClient.builder().exchangeStrategies(strategies).baseUrl(modelsServiceURL).build();
   }
 }

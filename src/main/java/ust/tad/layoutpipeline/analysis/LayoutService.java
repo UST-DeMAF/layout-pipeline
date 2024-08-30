@@ -32,7 +32,8 @@ public class LayoutService {
    * Generates the layout of the components and relations in the TADM.
    * @param tadm The TechnologyAgnosticDeploymentModel to generate the layout for.
    */
-  public void generateLayout(TechnologyAgnosticDeploymentModel tadm, double dpi, String flatten, int width, int height) {
+  public void generateLayout(
+      TechnologyAgnosticDeploymentModel tadm, double dpi, String flatten, int width, int height) {
     components = tadm.getComponents();
     componentTypes = tadm.getComponentTypes();
     relations = tadm.getRelations();
@@ -40,8 +41,9 @@ public class LayoutService {
 
     this.dpi = dpi;
     this.flatten = flatten;
-    graphSize = new double[]{convertPixelsToInches(width * 0.82), convertPixelsToInches(height * 0.79)};
-    nodeSize = new double[]{convertPixelsToInches(225), convertPixelsToInches(60)};
+    graphSize =
+        new double[] {convertPixelsToInches(width * 0.82), convertPixelsToInches(height * 0.79)};
+    nodeSize = new double[] {convertPixelsToInches(225), convertPixelsToInches(60)};
 
     String path = "/var/repository/graphviz/";
     String file = transformationProcessId.toString() + ".dot";
@@ -107,11 +109,30 @@ public class LayoutService {
     try (FileWriter writer = new FileWriter(path)) {
       writer.write("strict digraph {\n");
       if (flatten.equals("true")) {
-        writer.write("    graph [dpi=" + dpi + ", rank=\"same\", ratio=\"compress\", size=\"" + graphSize[0] + "," + graphSize[1] + "\", splines=\"ortho\"]\n");
+        writer.write(
+            "    graph [dpi="
+                + dpi
+                + ", rank=\"same\", ratio=\"compress\", size=\""
+                + graphSize[0]
+                + ","
+                + graphSize[1]
+                + "\", splines=\"ortho\"]\n");
       } else {
-        writer.write("    graph [dpi=" + dpi + ", ratio=\"compress\", size=\"" + graphSize[0] + "," + graphSize[1] + "\", splines=\"ortho\"]\n");
+        writer.write(
+            "    graph [dpi="
+                + dpi
+                + ", ratio=\"compress\", size=\""
+                + graphSize[0]
+                + ","
+                + graphSize[1]
+                + "\", splines=\"ortho\"]\n");
       }
-      writer.write("    node [fixedsize=\"true\", shape=\"polygon\",  width=" + nodeSize[0] +", height=" + nodeSize[1] + "]\n");
+      writer.write(
+          "    node [fixedsize=\"true\", shape=\"polygon\",  width="
+              + nodeSize[0]
+              + ", height="
+              + nodeSize[1]
+              + "]\n");
       writer.write("    edge [label=\"HostedOn\", style=\"solid\"]\n");
       for (String node : nodes) {
         writer.write(node);
@@ -191,7 +212,7 @@ public class LayoutService {
         double[] coords = entry.getValue();
         int x = convertInchesToPixels(coords[0]);
         int y = convertInchesToPixels(Math.abs(coords[1] - maxY)) + 100;
-        layout.put(node, new int[]{x, y});
+        layout.put(node, new int[] {x, y});
       }
     } catch (IOException e) {
       throw new RuntimeException(e);
@@ -283,7 +304,7 @@ public class LayoutService {
       try {
         node.type = component.getType().getName();
       } catch (Exception e) {
-          LOG.info("Component type of the component {} is not defined.", component.getName());
+        LOG.info("Component type of the component {} is not defined.", component.getName());
       }
 
       if (typeCount.containsKey(node.type)) {
@@ -387,19 +408,19 @@ public class LayoutService {
   }
 
   /*
-  * Converts inches to pixels.
-  * @param inches the inches
-  * @return the pixels
-  */
+   * Converts inches to pixels.
+   * @param inches the inches
+   * @return the pixels
+   */
   private int convertInchesToPixels(double inches) {
     return (int) Math.round(inches * dpi);
   }
 
   /*
-  * Converts pixels to inches.
-  * @param pixels the pixels
-  * @return the inches
-  */
+   * Converts pixels to inches.
+   * @param pixels the pixels
+   * @return the inches
+   */
   private double convertPixelsToInches(double pixels) {
     return pixels / dpi;
   }
