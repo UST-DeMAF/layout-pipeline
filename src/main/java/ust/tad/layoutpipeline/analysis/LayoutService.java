@@ -17,11 +17,12 @@ public class LayoutService {
 
   private static final Logger LOG = LoggerFactory.getLogger(LayoutService.class);
 
+  private final Map<String, int[]> layout = new HashMap<>();
+  private final String regex = ".*\\$\\(.*\\).*";
+
   private List<Component> components = new ArrayList<>();
   private List<ComponentType> componentTypes = new ArrayList<>();
   private List<Relation> relations = new ArrayList<>();
-
-  private final Map<String, int[]> layout = new HashMap<>();
 
   private double dpi;
   private String flatten;
@@ -252,14 +253,17 @@ public class LayoutService {
         List<Property> properties = componentType.getProperties();
         for (Property property : properties) {
           String key = property.getKey();
+          String value = property.getValue().toString();
           if (isNumeric(key)) {
-            writer.write("      \"" + key + "\":\n");
-          } else {
-            writer.write("      " + key + ":\n");
+            key = "\"" + key + "\"";
           }
+          if (value.matches(regex)) {
+            value = "\"" + value + "\"";
+          }
+          writer.write("      " + key + ":\n");
           writer.write("        type: " + property.getType().name() + "\n");
           writer.write("        required: " + property.getRequired() + "\n");
-          writer.write("        default: " + property.getValue().toString() + "\n");
+          writer.write("        default: " + value + "\n");
         }
         writer.write("    requirements:\n");
         writer.write("      - host:\n");
@@ -367,11 +371,14 @@ public class LayoutService {
         writer.write("      properties:\n");
         for (Property property : node.properties) {
           String key = property.getKey();
+          String value = property.getValue().toString();
           if (isNumeric(key)) {
-            writer.write("        \"" + key + "\": " + property.getValue() + "\n");
-          } else {
-            writer.write("        " + key + ": " + property.getValue() + "\n");
+            key = "\"" + key + "\"";
           }
+          if (value.matches(regex)) {
+            value = "\"" + value + "\"";
+          }
+          writer.write("        " + key + ": " + value + "\n");
         }
         if (!node.requirements.isEmpty()) {
           writer.write("      requirements:\n");
