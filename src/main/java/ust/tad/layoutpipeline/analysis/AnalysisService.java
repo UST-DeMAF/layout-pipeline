@@ -11,19 +11,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.yaml.snakeyaml.Yaml;
 import ust.tad.layoutpipeline.analysistask.AnalysisTaskResponseSender;
 import ust.tad.layoutpipeline.analysistask.Location;
 import ust.tad.layoutpipeline.models.ModelsService;
 import ust.tad.layoutpipeline.models.tadm.*;
 import ust.tad.layoutpipeline.models.tsdm.InvalidAnnotationException;
-import ust.tad.layoutpipeline.registration.PluginRegistrationRunner;
 
 @Service
 public class AnalysisService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PluginRegistrationRunner.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AnalysisService.class);
   private static final Set<String> supportedFileExtensions = Set.of("yaml", "yml");
 
   private final List<Component> components = new ArrayList<>();
@@ -40,6 +38,11 @@ public class AnalysisService {
   private List<Property> properties = new ArrayList<>();
   private TechnologyAgnosticDeploymentModel tadm;
   private UUID transformationProcessId;
+
+  private double dpi = 96.0;
+  private String flatten = "false";
+  private int width = 1920;
+  private int height = 1080;
 
   /*
    * Start the analysis process for the given task.
@@ -67,7 +70,19 @@ public class AnalysisService {
       this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
     }
 
-    layoutService.generateLayout(tadm);
+    for (String command : commands) {
+      if (command.contains("dpi")) {
+        dpi = Double.parseDouble(command.split("dpi=")[1]);
+      } else if (command.contains("flatten")) {
+        flatten = command.split("flatten=")[1];
+      } else if (command.contains("width")) {
+        width = Integer.parseInt(command.split("width=")[1]);
+      } else if (command.contains("height")) {
+        height = Integer.parseInt(command.split("height=")[1]);
+      }
+    }
+
+    layoutService.generateLayout(tadm, dpi, flatten, width, height);
     analysisTaskResponseSender.sendSuccessResponse(taskId);
   }
 
