@@ -24,7 +24,7 @@ jobs:
           submodules: 'true'
 
       - name: Login to GitHub Container Registry
-        run: cho ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u well5a --password-stdin
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u well5a --password-stdin
 
       - name: Build the Docker image
         run: docker build . --file Dockerfile --tag IMAGE_URL/$IMAGE_NAME:$IMAGE_TAG
