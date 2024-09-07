@@ -16,6 +16,8 @@ public class TechnologySpecificDeploymentModel {
 
   private List<String> commands = new ArrayList<>();
 
+  private List<String> options = new ArrayList<>();
+
   private List<DeploymentModelContent> content = new ArrayList<>();
 
   private List<TechnologySpecificDeploymentModel> embeddedDeploymentModels = new ArrayList<>();
@@ -31,6 +33,7 @@ public class TechnologySpecificDeploymentModel {
       UUID transformationProcessId,
       String technology,
       List<String> commands,
+      List<String> options,
       List<DeploymentModelContent> content)
       throws InvalidNumberOfContentException {
     if (content.isEmpty()) {
@@ -39,6 +42,7 @@ public class TechnologySpecificDeploymentModel {
       this.transformationProcessId = transformationProcessId;
       this.technology = technology;
       this.commands = commands;
+      this.options = options;
       this.content = content;
     }
   }
@@ -47,6 +51,7 @@ public class TechnologySpecificDeploymentModel {
       UUID transformationProcessId,
       String technology,
       List<String> commands,
+      List<String> options,
       List<DeploymentModelContent> content,
       List<TechnologySpecificDeploymentModel> embeddedDeploymentModels)
       throws InvalidNumberOfContentException {
@@ -56,6 +61,7 @@ public class TechnologySpecificDeploymentModel {
       this.transformationProcessId = transformationProcessId;
       this.technology = technology;
       this.commands = commands;
+      this.options = options;
       this.content = content;
       this.embeddedDeploymentModels = embeddedDeploymentModels;
     }
@@ -92,6 +98,10 @@ public class TechnologySpecificDeploymentModel {
   public void setCommands(List<String> commands) {
     this.commands = commands;
   }
+
+  public List<String> getOptions() { return this.options; }
+
+  public void setOptions(List<String> options) { this.options = options; }
 
   public List<DeploymentModelContent> getContent() {
     return this.content;
@@ -147,6 +157,11 @@ public class TechnologySpecificDeploymentModel {
     return this;
   }
 
+  public TechnologySpecificDeploymentModel options(List<String> options) {
+    setOptions(options);
+    return this;
+  }
+
   public TechnologySpecificDeploymentModel content(List<DeploymentModelContent> content)
       throws InvalidNumberOfContentException {
     setContent(content);
@@ -177,6 +192,7 @@ public class TechnologySpecificDeploymentModel {
             transformationProcessId, technologySpecificDeploymentModel.transformationProcessId)
         && Objects.equals(technology, technologySpecificDeploymentModel.technology)
         && Objects.equals(commands, technologySpecificDeploymentModel.commands)
+        && Objects.equals(options, technologySpecificDeploymentModel.options)
         && Objects.equals(content, technologySpecificDeploymentModel.content)
         && Objects.equals(
             embeddedDeploymentModels, technologySpecificDeploymentModel.embeddedDeploymentModels)
@@ -186,7 +202,7 @@ public class TechnologySpecificDeploymentModel {
   @Override
   public int hashCode() {
     return Objects.hash(
-        id, transformationProcessId, technology, commands, content, embeddedDeploymentModels, root);
+        id, transformationProcessId, technology, commands, options, content, embeddedDeploymentModels, root);
   }
 
   @Override
@@ -203,6 +219,9 @@ public class TechnologySpecificDeploymentModel {
         + "'"
         + ", commands='"
         + getCommands()
+        + "'"
+        + ", options='"
+        + getOptions()
         + "'"
         + ", content='"
         + getContent()

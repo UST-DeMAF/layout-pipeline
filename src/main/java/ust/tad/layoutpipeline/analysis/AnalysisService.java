@@ -52,7 +52,7 @@ public class AnalysisService {
    * @param locations the locations
    */
   public void startAnalysis(
-      UUID taskId, UUID transformationProcessId, List<String> commands, List<Location> locations) {
+      UUID taskId, UUID transformationProcessId, List<String> commands, List<String> options, List<Location> locations) {
     if (!locations.isEmpty()) {
       this.transformationProcessId = transformationProcessId;
       try {
@@ -70,15 +70,15 @@ public class AnalysisService {
       this.tadm = modelsService.getTechnologyAgnosticDeploymentModel(transformationProcessId);
     }
 
-    for (String command : commands) {
-      if (command.contains("dpi")) {
-        dpi = Double.parseDouble(command.split("dpi=")[1]);
-      } else if (command.contains("flatten")) {
-        flatten = command.split("flatten=")[1];
-      } else if (command.contains("width")) {
-        width = Integer.parseInt(command.split("width=")[1]);
-      } else if (command.contains("height")) {
-        height = Integer.parseInt(command.split("height=")[1]);
+    for (String option : options) {
+      if (option.contains("dpi")) {
+        dpi = Double.parseDouble(option.split("dpi=")[1]);
+      } else if (option.contains("flatten")) {
+        flatten = option.split("flatten=")[1];
+      } else if (option.contains("width")) {
+        width = Integer.parseInt(option.split("width=")[1]);
+      } else if (option.contains("height")) {
+        height = Integer.parseInt(option.split("height=")[1]);
       }
     }
 

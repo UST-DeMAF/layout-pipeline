@@ -61,6 +61,7 @@ public class AnalysisTaskReceiver {
         analysisTaskStartRequest.getTaskId(),
         analysisTaskStartRequest.getTransformationProcessId(),
         analysisTaskStartRequest.getCommands(),
+        analysisTaskStartRequest.getOptions(),
         analysisTaskStartRequest.getLocations());
   }
 
