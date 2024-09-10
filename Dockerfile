@@ -1,10 +1,7 @@
-FROM debian:latest
+FROM alpine:latest
 
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y default-jdk graphviz maven curl \
-    && apt-get autoremove -y \
-    && apt-get autoclean -y
+RUN apk upgrade --no-cache \
+    && apk add --no-cache curl graphviz maven openjdk17
 
 RUN mkdir -p /app/target
 WORKDIR /app
