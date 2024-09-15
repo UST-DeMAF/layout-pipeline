@@ -99,9 +99,13 @@ public class TechnologySpecificDeploymentModel {
     this.commands = commands;
   }
 
-  public List<String> getOptions() { return this.options; }
+  public List<String> getOptions() {
+    return this.options;
+  }
 
-  public void setOptions(List<String> options) { this.options = options; }
+  public void setOptions(List<String> options) {
+    this.options = options;
+  }
 
   public List<DeploymentModelContent> getContent() {
     return this.content;
@@ -202,7 +206,14 @@ public class TechnologySpecificDeploymentModel {
   @Override
   public int hashCode() {
     return Objects.hash(
-        id, transformationProcessId, technology, commands, options, content, embeddedDeploymentModels, root);
+        id,
+        transformationProcessId,
+        technology,
+        commands,
+        options,
+        content,
+        embeddedDeploymentModels,
+        root);
   }
 
   @Override

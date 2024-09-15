@@ -68,9 +68,13 @@ public class EmbeddedDeploymentModelAnalysisRequest {
     this.commands = commands;
   }
 
-  public List<String> getOptions() { return this.options; }
+  public List<String> getOptions() {
+    return this.options;
+  }
 
-  public void setOptions(List<String> options) { this.options = options; }
+  public void setOptions(List<String> options) {
+    this.options = options;
+  }
 
   public List<Location> getLocations() {
     return this.locations;
@@ -130,7 +134,8 @@ public class EmbeddedDeploymentModelAnalysisRequest {
 
   @Override
   public int hashCode() {
-    return Objects.hash(parentTaskId, transformationProcessId, technology, commands, options, locations);
+    return Objects.hash(
+        parentTaskId, transformationProcessId, technology, commands, options, locations);
   }
 
   @Override

@@ -25,7 +25,11 @@ public class AnalysisTaskStartRequest {
   public AnalysisTaskStartRequest() {}
 
   public AnalysisTaskStartRequest(
-      UUID taskId, UUID transformationProcessId, List<String> commands, List<String> options, List<Location> locations) {
+      UUID taskId,
+      UUID transformationProcessId,
+      List<String> commands,
+      List<String> options,
+      List<Location> locations) {
     this.taskId = taskId;
     this.transformationProcessId = transformationProcessId;
     this.commands = commands;
@@ -57,9 +61,13 @@ public class AnalysisTaskStartRequest {
     this.commands = commands;
   }
 
-  public List<String> getOptions() { return this.options; }
+  public List<String> getOptions() {
+    return this.options;
+  }
 
-  public void setOptions(List<String> options) { this.options = options; }
+  public void setOptions(List<String> options) {
+    this.options = options;
+  }
 
   public List<Location> getLocations() {
     return this.locations;

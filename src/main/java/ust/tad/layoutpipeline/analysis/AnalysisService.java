@@ -52,7 +52,11 @@ public class AnalysisService {
    * @param locations the locations
    */
   public void startAnalysis(
-      UUID taskId, UUID transformationProcessId, List<String> commands, List<String> options, List<Location> locations) {
+      UUID taskId,
+      UUID transformationProcessId,
+      List<String> commands,
+      List<String> options,
+      List<Location> locations) {
     if (!locations.isEmpty()) {
       this.transformationProcessId = transformationProcessId;
       try {
