@@ -15,6 +15,8 @@ public class EmbeddedDeploymentModelAnalysisRequest {
 
   private List<String> commands = new ArrayList<>();
 
+  private List<String> options = new ArrayList<>();
+
   private List<Location> locations = new ArrayList<>();
 
   public EmbeddedDeploymentModelAnalysisRequest() {}
@@ -24,11 +26,13 @@ public class EmbeddedDeploymentModelAnalysisRequest {
       UUID transformationProcessId,
       String technology,
       List<String> commands,
+      List<String> options,
       List<Location> locations) {
     this.parentTaskId = parentTaskId;
     this.transformationProcessId = transformationProcessId;
     this.technology = technology;
     this.commands = commands;
+    this.options = options;
     this.locations = locations;
   }
 
@@ -64,6 +68,14 @@ public class EmbeddedDeploymentModelAnalysisRequest {
     this.commands = commands;
   }
 
+  public List<String> getOptions() {
+    return this.options;
+  }
+
+  public void setOptions(List<String> options) {
+    this.options = options;
+  }
+
   public List<Location> getLocations() {
     return this.locations;
   }
@@ -93,6 +105,11 @@ public class EmbeddedDeploymentModelAnalysisRequest {
     return this;
   }
 
+  public EmbeddedDeploymentModelAnalysisRequest options(List<String> options) {
+    setOptions(options);
+    return this;
+  }
+
   public EmbeddedDeploymentModelAnalysisRequest locations(List<Location> locations) {
     setLocations(locations);
     return this;
@@ -111,12 +128,14 @@ public class EmbeddedDeploymentModelAnalysisRequest {
             transformationProcessId, embeddedDeploymentModelAnalysisRequest.transformationProcessId)
         && Objects.equals(technology, embeddedDeploymentModelAnalysisRequest.technology)
         && Objects.equals(commands, embeddedDeploymentModelAnalysisRequest.commands)
+        && Objects.equals(options, embeddedDeploymentModelAnalysisRequest.options)
         && Objects.equals(locations, embeddedDeploymentModelAnalysisRequest.locations);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(parentTaskId, transformationProcessId, technology, commands, locations);
+    return Objects.hash(
+        parentTaskId, transformationProcessId, technology, commands, options, locations);
   }
 
   @Override
@@ -133,6 +152,9 @@ public class EmbeddedDeploymentModelAnalysisRequest {
         + "'"
         + ", commands='"
         + getCommands()
+        + "'"
+        + ", options='"
+        + getOptions()
         + "'"
         + ", locations='"
         + getLocations()

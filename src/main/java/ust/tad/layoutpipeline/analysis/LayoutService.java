@@ -429,7 +429,7 @@ public class LayoutService {
    * @return the inches
    */
   private double convertPixelsToInches(double pixels) {
-    return pixels / dpi;
+    return (double) Math.round((pixels / dpi) * 100) / 100;
   }
 
   /*
