@@ -12,7 +12,7 @@ on:
 
 env:
   IMAGE_URL: ghcr.io/ust-demaf
-  IMAGE_NAME: layout-pipeline
+  IMAGE_NAME: visualization-service
   IMAGE_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || github.ref == 'refs/heads/dev' && 'testing' || 'nightly' }}
 
 jobs:

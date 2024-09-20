@@ -163,10 +163,10 @@ services:
       retries: 3
 
   # Plugins
-  layout-pipeline:
-    hostname: layout-pipeline
-    container_name: layout-pipeline
-    image: layout-pipeline:latest
+  visualization-service:
+    hostname: visualization-service
+    container_name: visualization-service
+    image: visualization-service:latest
     build:
       context: .
       dockerfile: Dockerfile
