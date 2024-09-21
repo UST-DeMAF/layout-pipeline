@@ -11,4 +11,4 @@ COPY src ./src
 
 RUN mvn clean package
 
-CMD java -jar target/layout-pipeline-1.0-SNAPSHOT.jar
+CMD java -jar target/visualization-service-0.1.0-SNAPSHOT.jar

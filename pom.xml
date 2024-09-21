@@ -9,11 +9,11 @@
     <relativePath/> <!-- lookup parent from repository -->
   </parent>
   <groupId>ust.tad</groupId>
-  <artifactId>layout-pipeline</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <artifactId>visualization-service</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
 
-  <name>layout-pipeline</name>
-  <description>layout pipeline using GraphVIZ for alignment of EDMM models</description>
+  <name>visualization-service</name>
+  <description>Visualization service using GraphVIZ for alignment of EDMM models</description>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
