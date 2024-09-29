@@ -4,33 +4,30 @@ on:
   push:
     branches:    
       - 'main'
+      - 'dev'
+      - 'nightly'
+  pull_request:
+    branches:    
+      - 'main'
 
 env:
-  IMAGE_NAME: layout-pipeline
+  IMAGE_URL: ghcr.io/ust-demaf
+  IMAGE_NAME: visualization-service
+  IMAGE_TAG: ${{ github.ref == 'refs/heads/main' && 'latest' || github.ref == 'refs/heads/dev' && 'testing' || 'nightly' }}
 
 jobs:
-  build-with-paketo-push-2-dockerhub:
+  build-using-dockerfile-push-2-ghcr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
-          
-      - name: Login to DockerHub Container Registry
-        run: echo $DOCKER_HUB_TOKEN | docker login -u 365bit --password-stdin
-        env:
-          DOCKER_HUB_TOKEN: ${{ secrets.DOCKERHUBTOKEN }}
 
-      - name: Install pack CLI via the official buildpack Action https://github.com/buildpacks/github-actions#setup-pack-cli-action
-        uses: buildpacks/github-actions/setup-pack@v4.8.0
+      - name: Login to GitHub Container Registry
+        run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u well5a --password-stdin
 
-      - name: Build app with pack CLI using Buildpack Cache image (see https://buildpacks.io/docs/app-developer-guide/using-cache-image/) & publish to Docker Hub
-        run: |
-          pack build index.docker.io/365bit/$IMAGE_NAME:latest \
-              --builder paketobuildpacks/builder:base \
-              --path . \
-              --env BP_INCLUDE_FILES="src/*" \
-              --env BP_JVM_VERSION=17 \
-              --env BPL_JAVA_NMT_ENABLED=false \
-              --cache-image index.docker.io/365bit/$IMAGE_NAME-paketo-cache-image:latest \
-              --publish
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag $IMAGE_URL/$IMAGE_NAME:$IMAGE_TAG
+
+      - name: Push the Docker image
+        run: docker push $IMAGE_URL/$IMAGE_NAME:$IMAGE_TAG
