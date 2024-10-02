@@ -13,7 +13,7 @@ If you want to boot it locally nevertheless use the following commands.
 
 ```shell
 mvn clean package
-java -jar target/visualization-service-0.1.0-SNAPSHOT.jar
+java -jar target/visualization-service-0.2.0-SNAPSHOT.jar
 ```
 
 ## Usage of Application

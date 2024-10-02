@@ -10,7 +10,7 @@
   </parent>
   <groupId>ust.tad</groupId>
   <artifactId>visualization-service</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.2.0-SNAPSHOT</version>
 
   <name>visualization-service</name>
   <description>Visualization service using GraphVIZ for alignment of EDMM models</description>
